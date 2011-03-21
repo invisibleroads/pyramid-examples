@@ -1,11 +1,10 @@
 """Views"""
 import transaction
 
-from board.models import DBSession
-from board.models import Post
+from board.models import DBSession, Post
  
 
-def list(request):
+def index(request):
     db = DBSession()
     posts = db.query(Post).order_by(Post.id.desc()).all()
     return {'posts': posts}
@@ -13,8 +12,8 @@ def list(request):
 
 def add(request):
     db = DBSession()
-    text = request.POST.get('text', '').strip()
+    text = request.params.get('text', '').strip()
     if text:
         db.add(Post(text))
         transaction.commit()
-    return list(request)
+    return index(request)

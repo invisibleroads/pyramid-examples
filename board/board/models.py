@@ -39,3 +39,5 @@ def initialize_sql(engine):
         for text in u'one', u'two', u'three':
             db.add(Post(text))
         transaction.commit()
+    # Return
+    return db

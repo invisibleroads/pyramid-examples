@@ -31,7 +31,7 @@
 	<input id=text>
 	<input id=add type=button value=Add>
 	<div id=posts>
-		<%include file="list_.mak"/>
+		<%include file="index_.mak"/>
 	</div>
 </body>
 </html>

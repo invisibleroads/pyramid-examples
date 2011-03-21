@@ -13,9 +13,9 @@ def main(global_config, **settings):
     # Configure routes
     config = Configurator(settings=settings)
     config.add_static_view('static', 'board:static')
-    config.add_route('list', '/', view='board.views.list',
-        view_renderer='list.mak', request_method='GET')
+    config.add_route('index', '/', view='board.views.index',
+        view_renderer='index.mak', request_method='GET')
     config.add_route('add', '/', view='board.views.add',
-        view_renderer='list_.mak', request_method='POST')
+        view_renderer='index_.mak', request_method='POST')
     # Return WSGI app
     return config.make_wsgi_app()
