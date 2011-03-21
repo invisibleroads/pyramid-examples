@@ -17,13 +17,4 @@ board.egg-info/not-zip-safe
 board.egg-info/paster_plugins.txt
 board.egg-info/requires.txt
 board.egg-info/top_level.txt
-board/static/favicon.ico
-board/static/footerbg.png
-board/static/headerbg.png
-board/static/ie6.css
-board/static/middlebg.png
-board/static/pylons.css
-board/static/pyramid-small.png
-board/static/pyramid.png
-board/static/transparent.gif
-board/templates/mytemplate.pt
+board/templates/list.mak

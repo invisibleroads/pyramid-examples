@@ -1,42 +1,42 @@
+"""Database models"""
 import transaction
-
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import Unicode
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
-
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
-
 from zope.sqlalchemy import ZopeTransactionExtension
+
+
+TEXT_LEN_MAX = 256
+
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
-class MyModel(Base):
-    __tablename__ = 'models'
+
+class Post(Base):
+    """A board post"""
+    __tablename__ = 'posts'
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(255), unique=True)
-    value = Column(Integer)
+    text = Column(Unicode(TEXT_LEN_MAX))
 
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
+    def __init__(self, text):
+        self.text = text
 
-def populate():
-    session = DBSession()
-    model = MyModel(name=u'root', value=55)
-    session.add(model)
-    session.flush()
-    transaction.commit()
-    
+
 def initialize_sql(engine):
+    """Create tables and insert data"""
+    # Create tables
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
-    try:
-        populate()
-    except IntegrityError:
-        DBSession.rollback()
+    # Insert data
+    db = DBSession()
+    if not db.query(Post).count():
+        for text in u'one', u'two', u'three':
+            db.add(Post(text))
+        db.flush()
+        transaction.commit()
