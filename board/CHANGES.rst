@@ -1,4 +1,4 @@
 0.0
 ---
 
--  Initial version
+- Started project with ``paster create -t pyramid_routesalchemy``.
