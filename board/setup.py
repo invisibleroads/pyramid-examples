@@ -23,7 +23,7 @@ if sys.version_info[:3] < (2,5,0):
 
 entry_points = """\
     [paste.app_factory]
-    main = test:main
+    main = board:main
 """
 
 

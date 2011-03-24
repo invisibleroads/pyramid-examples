@@ -1,6 +1,6 @@
-CHANGES.txt
+CHANGES.rst
 MANIFEST.in
-README.txt
+README.rst
 development.ini
 production.ini
 setup.cfg
@@ -17,6 +17,5 @@ board.egg-info/not-zip-safe
 board.egg-info/paster_plugins.txt
 board.egg-info/requires.txt
 board.egg-info/top_level.txt
-board/static/jquery-1.5.1.min.js
 board/templates/index.mak
 board/templates/index_.mak

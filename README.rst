@@ -5,5 +5,5 @@ Examples of simple web applications built with Pyramid
     virtualenv --no-site-packages pyramid-env
     cd pyramid-env
     source bin/activate
-    pip install pyramid ipython coverage
+    pip install pyramid ipython nose coverage
     git clone git://github.com/invisibleroads/pyramid-examples.git examples

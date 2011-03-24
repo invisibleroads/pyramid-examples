@@ -6,16 +6,28 @@ Home-page: UNKNOWN
 Author: UNKNOWN
 Author-email: UNKNOWN
 License: UNKNOWN
-Description: board README
+Description: Bulletin board
+        ==============
+        The bulletin board example demonstrates simple view configuration, authentication and authorization using the Pyramid web application framework. ::
         
-        
-        
+            # Activate isolated environment
+            source ../../bin/activate
+            # Install dependencies
+            python setup.py develop
+            # Run tests with coverage
+            nosetests
+            # Show URL routes
+            paster proutes development.ini board
+            # Run shell
+            paster pshell development.ini board
+            # Start server
+            paster serve --reload development.ini
         
         
         0.0
         ---
         
-        -  Initial version
+        - Started project with ``paster create -t pyramid_routesalchemy``.
         
 Keywords: web wsgi bfg pylons pyramid
 Platform: UNKNOWN

@@ -1,6 +1,7 @@
 """Pyramid WSGI configuration"""
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from pyramid_beaker import session_factory_from_settings, set_cache_regions_from_settings
 
 from board.models import initialize_sql
 
@@ -10,8 +11,12 @@ def main(global_config, **settings):
     # Connect to database
     engine = engine_from_config(settings, 'sqlalchemy.')
     initialize_sql(engine)
-    # Configure routes
+    # Prepare configuration
     config = Configurator(settings=settings)
+    # Configure sessions and caches
+    config.set_session_factory(session_factory_from_settings(settings))
+    set_cache_regions_from_settings(settings)
+    # Configure routes
     config.add_static_view('static', 'board:static')
     config.add_route('index', '/', view='board.views.index',
         view_renderer='index.mak', request_method='GET')
