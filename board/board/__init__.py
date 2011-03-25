@@ -13,7 +13,7 @@ def main(global_config, **settings):
     initialize_sql(engine)
     # Prepare configuration
     config = Configurator(settings=settings)
-    # Configure sessions and caches
+    # Configure cache regions
     set_cache_regions_from_settings(settings)
     # Configure routes
     config.add_static_view('static', 'board:static')

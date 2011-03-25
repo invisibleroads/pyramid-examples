@@ -2,6 +2,7 @@
 import unittest
 from pyramid.config import Configurator
 from pyramid import testing
+from pyramid_beaker import set_cache_regions_from_settings
 from sqlalchemy import create_engine
 
 from board.models import initialize_sql, Post
@@ -17,6 +18,10 @@ class TestMyView(unittest.TestCase):
 
     def setUp(self):
         self.config = testing.setUp()
+        set_cache_regions_from_settings({
+            'cache.type': 'memory',
+            'cache.regions': 'minute, hour',
+        })
 
     def tearDown(self):
         testing.tearDown()
