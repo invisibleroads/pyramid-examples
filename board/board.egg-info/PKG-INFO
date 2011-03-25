@@ -28,10 +28,16 @@ Description: Bulletin board
         ---
         
         - Started project with ``paster create -t pyramid_routesalchemy``.
+        - Added model ``Post``
+        - Added route ``index``
+        - Added route ``add``
+        - Created template ``index.mak``
+        - Created template ``index_.mak``
+        - Added caching with ``beaker.cache``
         
 Keywords: web wsgi bfg pylons pyramid
 Platform: UNKNOWN
 Classifier: Programming Language :: Python
-Classifier: Framework :: Pylons
+Classifier: Framework :: Pyramid
 Classifier: Topic :: Internet :: WWW/HTTP
 Classifier: Topic :: Internet :: WWW/HTTP :: WSGI :: Application
