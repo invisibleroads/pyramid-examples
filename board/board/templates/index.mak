@@ -1,12 +1,13 @@
 <!doctype html>
 <head>
-	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+	<meta http-equiv='Content-Type' content='text/html;charset=UTF-8'/>
+	<title>Pyramid example: ${SITE_NAME}</title>
 </head>
 <body>
 	<input id=text>
 	<input id=add type=button value=Add>
 	<div id=posts>
-		<%include file="index_.mak"/>
+		<%include file='index_.mak'/>
 	</div>
 	<script src="${request.static_url('board:static/jquery-1.5.1.min.js')}"></script>
 	<script>

@@ -8,13 +8,9 @@ from sqlalchemy import create_engine
 from board.models import initialize_sql, Post
 
 
-def _initTestingDB():
-    return initialize_sql(create_engine('sqlite://'))
+class TestViews(unittest.TestCase):
 
-
-class TestMyView(unittest.TestCase):
-
-    db = _initTestingDB()
+    db = initialize_sql(create_engine('sqlite://'))
 
     def setUp(self):
         self.config = testing.setUp()
