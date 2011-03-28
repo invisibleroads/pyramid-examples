@@ -1,3 +1,2 @@
-      [paste.app_factory]
-      main = auth:main
-      
+    [paste.app_factory]
+    main = auth:main

@@ -29,6 +29,7 @@ def main(global_config, **settings):
             nickname, groups = u'', []
         return {
             'SITE_NAME': 'Auth',
+            'SITE_VERSION': '0.0',
             'USER_ID': userID,
             'USER_GROUPS': groups,
             'USER_NICKNAME': nickname,

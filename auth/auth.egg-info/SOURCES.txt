@@ -1,6 +1,6 @@
-CHANGES.txt
+CHANGES.rst
 MANIFEST.in
-README.txt
+README.rst
 development.ini
 production.ini
 setup.cfg
@@ -19,3 +19,5 @@ auth.egg-info/requires.txt
 auth.egg-info/top_level.txt
 auth/templates/base.mak
 auth/templates/index.mak
+auth/templates/login.mak
+auth/templates/page.mak
