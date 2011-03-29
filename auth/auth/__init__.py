@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config
 import base64
 
 from auth.models import initialize_sql
+from auth.libraries.tools import make_random_string
 
 
 def main(global_config, **settings):
@@ -80,13 +81,6 @@ class RootFactory(object):
 
     def __init__(self, request):
         pass
-
-
-def make_random_string(length):
-    """Return a random string of a specified length"""
-    import random, string
-    alphabet = string.letters + string.digits
-    return ''.join(random.choice(alphabet) for x in xrange(length))
 
 
 def format_tokens(user):

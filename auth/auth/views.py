@@ -2,7 +2,8 @@
 from pyramid.httpexceptions import HTTPFound
 from pyramid.security import remember, forget
 
-from auth.models import DBSession, User, hashString
+from auth.models import DBSession, User
+from auth.libraries.tools import hash_string
 from auth import format_tokens
 
 
@@ -17,7 +18,7 @@ def login(request):
         targetURL = request.params.get('targetURL', request.route_url('index'))
         if 'submitted' in request.params:
             username = request.params.get('username', '')
-            password_hash = hashString(request.params.get('password', ''))
+            password_hash = hash_string(request.params.get('password', ''))
             db = DBSession()
             user = db.query(User).filter(
                 (User.username==username) & 

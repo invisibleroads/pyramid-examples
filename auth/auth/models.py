@@ -1,5 +1,4 @@
 """Database models"""
-# -*- coding: utf-8 -*-
 from sqlalchemy import func, Column, ForeignKey, Integer, String, LargeBinary, Unicode, Boolean, DateTime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
@@ -7,7 +6,8 @@ from sqlalchemy.orm import scoped_session, sessionmaker, relationship, column_pr
 from sqlalchemy.orm.properties import ColumnProperty
 from zope.sqlalchemy import ZopeTransactionExtension
 import transaction
-import hashlib
+
+from auth.libraries.tools import hash_string, make_random_string
 
 
 USERNAME_LENGTH_MINIMUM = 6
@@ -97,6 +97,37 @@ class SMSAddress(Base):
         return "<SMSAddress('%s')>" % self.email
 
 
+def populate(db):
+    """Insert data"""
+    userPacks = [
+        (
+            'user', 
+            make_random_string(PASSWORD_LENGTH), 
+            u'User', 
+            'user@example.com', 
+            False,
+        ), (
+            'administrator', 
+            make_random_string(PASSWORD_LENGTH), 
+            u'Administrator', 
+            'administrator@example.com', 
+            True,
+        ),
+    ]
+    userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'
+    for username, password, nickname, email, is_super in userPacks:
+        print userTemplate.format(username, password, nickname, email)
+        user = User(
+            username=username, 
+            password_hash=hash_string(password), 
+            nickname=nickname,
+            email=email,
+            is_super=is_super)
+        db.add(user)
+    print
+    transaction.commit()
+
+
 def initialize_sql(engine):
     """Create tables and insert data"""
     # Create tables
@@ -105,26 +136,7 @@ def initialize_sql(engine):
     Base.metadata.create_all(engine)
     # Insert data
     db = DBSession()
-    try:
-        userPacks = [
-            ('basic', 'basic', u'привет', 'basic@example.com', False),
-            ('super', 'super', u'спасибо', 'super@example.com', True),
-        ]
-        for username, password, nickname, email, is_super in userPacks:
-            user = User(
-                username=username, 
-                password_hash=hashString(password), 
-                nickname=nickname,
-                email=email)
-            user.is_super = is_super
-            db.add(user)
-        transaction.commit()
-    except IntegrityError:
-        db.rollback()
+    if not db.query(User).first():
+        populate(db)
     # Return
     return db
-
-
-def hashString(string): 
-    'Compute the hash of the string'
-    return hashlib.sha256(string).digest()
