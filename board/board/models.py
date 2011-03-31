@@ -1,4 +1,4 @@
-"""Database models"""
+'Database models'
 import transaction
 from sqlalchemy import Column, Integer, Unicode
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +15,7 @@ Base = declarative_base()
 
 
 class Post(Base):
-    """A board post"""
+    'A board post'
     __tablename__ = 'posts'
     id = Column(Integer, primary_key=True)
     text = Column(Unicode(TEXT_LEN_MAX))
@@ -25,7 +25,7 @@ class Post(Base):
 
 
 def initialize_sql(engine):
-    """Create tables and insert data"""
+    'Create tables and insert data'
     # Create tables
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine

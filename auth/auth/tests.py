@@ -1,4 +1,4 @@
-"""Tests"""
+'Tests'
 import unittest
 from pyramid import testing
 from pyramid.config import Configurator

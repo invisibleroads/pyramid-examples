@@ -1,4 +1,5 @@
 <!doctype html>
+<html>
 <head>
 	<meta http-equiv='Content-Type' content='text/html;charset=UTF-8'/>
 	<title>Pyramid example: ${SITE_NAME}</title>
@@ -9,7 +10,7 @@
 	<div id=posts>
 		<%include file='index_.mak'/>
 	</div>
-	<script src="${request.static_url('board:static/jquery-1.5.1.min.js')}"></script>
+	<script src="${request.static_url('static/jquery-1.5.1.min.js')}"></script>
 	<script>
 		function add() {
 			// Get text

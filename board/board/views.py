@@ -1,4 +1,4 @@
-"""Views"""
+'Views'
 import transaction
 from beaker.cache import cache_region, region_invalidate
 

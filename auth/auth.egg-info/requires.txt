@@ -3,3 +3,5 @@ SQLAlchemy
 transaction
 zope.sqlalchemy
 WebError
+formencode
+recaptcha-client
