@@ -10,7 +10,7 @@ from auth.libraries.tools import hash_string, make_random_string
 from auth.parameters import USERNAME_LENGTH_MAXIMUM, PASSWORD_LENGTH, NICKNAME_LENGTH_MAXIMUM, EMAIL_LENGTH_MAXIMUM, TICKET_LENGTH
 
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
@@ -85,46 +85,40 @@ class SMSAddress(Base):
         return "<SMSAddress('%s')>" % self.email
 
 
-def populate(db):
-    'Insert data'
-    userPacks = [
-        (
-            'user', 
-            make_random_string(PASSWORD_LENGTH), 
-            u'User', 
-            'user@example.com', 
-            False,
-        ), (
-            'administrator', 
-            make_random_string(PASSWORD_LENGTH), 
-            u'Administrator', 
-            'administrator@example.com', 
-            True,
-        ),
-    ]
-    userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'
-    for username, password, nickname, email, is_super in userPacks:
-        print userTemplate.format(username, password, nickname, email)
-        user = User(
-            username=username, 
-            password_hash=hash_string(password), 
-            nickname=nickname,
-            email=email,
-            is_super=is_super)
-        db.add(user)
-    print
-    transaction.commit()
-
-
 def initialize_sql(engine):
     'Create tables and insert data'
     # Create tables
-    DBSession.configure(bind=engine)
+    db.configure(bind=engine)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
-    # Insert data
-    db = DBSession()
+    # If the tables are empty,
     if not db.query(User).first():
-        populate(db)
-    # Return
-    return db
+        # Prepare data
+        userPacks = [
+            (
+                'user', 
+                make_random_string(PASSWORD_LENGTH), 
+                u'User', 
+                'user@example.com', 
+                False,
+            ), (
+                'administrator', 
+                make_random_string(PASSWORD_LENGTH), 
+                u'Administrator', 
+                'administrator@example.com', 
+                True,
+            ),
+        ]
+        # Insert data
+        userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'
+        for username, password, nickname, email, is_super in userPacks:
+            print userTemplate.format(username, password, nickname, email)
+            user = User(
+                username=username, 
+                password_hash=hash_string(password), 
+                nickname=nickname,
+                email=email,
+                is_super=is_super)
+            db.add(user)
+        print
+        transaction.commit()

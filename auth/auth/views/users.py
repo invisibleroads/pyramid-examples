@@ -2,11 +2,15 @@
 from pyramid.httpexceptions import HTTPFound
 from pyramid.security import remember, forget
 from pyramid.view import view_config
+from recaptcha.client import captcha
+import formencode
 import base64
+import datetime
+import cStringIO as StringIO
 
-from auth.models import DBSession, User
-from auth.libraries.tools import hash_string
-from auth.parameters import USERNAME_LENGTH_MINIMUM, USERNAME_LENGTH_MAXIMUM
+from auth.models import db, User
+from auth.libraries.tools import hash_string, make_random_string
+from auth.parameters import USERNAME_LENGTH_MINIMUM, USERNAME_LENGTH_MAXIMUM, PASSWORD_LENGTH_MINIMUM, NICKNAME_LENGTH_MINIMUM, NICKNAME_LENGTH_MAXIMUM
 
 
 def add_routes(config):
@@ -23,7 +27,6 @@ def add_routes(config):
 @view_config(route_name='user_index', renderer='users/index.mak')
 def index(request):
     'Show information about people registered in the database'
-    db = DBSession()
     return {'users': db.query(User).order_by(User.when_login.desc()).all()}
 
 
@@ -50,7 +53,7 @@ def confirm(request):
         # Set
         messageCode = 'updated' if candidate.user_id else 'created'
         # Delete expired or similar candidates
-        Session.execute(model.user_candidates_table.delete().where((model.UserCandidate.when_expired < datetime.datetime.utcnow()) | (model.UserCandidate.username == candidate.username) | (model.UserCandidate.nickname == candidate.nickname) | (model.UserCandidate.email == candidate.email)))
+        Session.execute(user_candidates_table.delete().where((UserCandidate.when_expired < datetime.datetime.utcnow()) | (UserCandidate.username == candidate.username) | (UserCandidate.nickname == candidate.nickname) | (UserCandidate.email == candidate.email)))
         Session.commit()
     # If the candidate does not exist,
     else:
@@ -71,7 +74,6 @@ def login(request):
         if 'submitted' in request.params:
             username = request.params.get('username', '')
             password_hash = hash_string(request.params.get('password', ''))
-            db = DBSession()
             user = db.query(User).filter(
                 (User.username==username) & 
                 (User.password_hash==password_hash)
@@ -89,12 +91,12 @@ def login_(request):
     'Process login credentials'
     # Check username
     username = str(request.POST.get('username', ''))
-    user = Session.query(model.User).filter_by(username=username).first()
+    user = Session.query(User).filter_by(username=username).first()
     # If the username does not exist,
     if not user:
         return dict(isOk=0)
     # Check password
-    password_hash = model.hashString(str(request.POST.get('password', '')))
+    password_hash = hashString(str(request.POST.get('password', '')))
     # If the password is incorrect,
     if password_hash != StringIO.StringIO(user.password_hash).read():
         # Increase and return rejection_count without a requery
@@ -131,7 +133,7 @@ def login_(request):
 def update(request):
     'Show account update page'
     # Render
-    user = Session.query(model.User).options(orm.joinedload(model.User.sms_addresses)).get(h.getUserID())
+    user = Session.query(User).options(orm.joinedload(User.sms_addresses)).get(h.getUserID())
     c.isNew = False
     c.smsAddresses = user.sms_addresses
     # Return
@@ -152,7 +154,7 @@ def update_(request):
         # Load
         action = request.POST.get('action')
         smsAddressID = request.POST['smsAddressID']
-        smsAddress = Session.query(model.SMSAddress).filter((model.SMSAddress.id==smsAddressID) & (model.SMSAddress.owner_id==userID)).first()
+        smsAddress = Session.query(SMSAddress).filter((SMSAddress.id==smsAddressID) & (SMSAddress.owner_id==userID)).first()
         if not smsAddress:
             return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
         # If the user is trying to activate an SMS address,
@@ -173,7 +175,7 @@ def update_(request):
     # If the user is trying to update account information,
     else:
         # Send update confirmation email
-        return changeUser(dict(request.POST), 'update', Session.query(model.User).get(userID))
+        return changeUser(dict(request.POST), 'update', Session.query(User).get(userID))
 
 @view_config(route_name='user_logout')
 def logout(request):
@@ -196,7 +198,7 @@ def reset(request):
     # Get email
     email = request.POST.get('email')
     # Try to load the user
-    user = Session.query(model.User).filter(model.User.email==email).first()
+    user = Session.query(User).filter(User.email==email).first()
     # If the email is not in our database,
     if not user: 
         return dict(isOk=0)
@@ -216,27 +218,26 @@ def parse_tokens(tokens):
     return nickname, tokens[1:]
 
 
-
-import formencode
-import datetime
-import recaptcha.client.captcha as captcha
-import cStringIO as StringIO
-
-
-
-# Helpers
-
-def changeUser(valueByName, action, user=None):
+def change_user(valueByName, action, user=None):
     'Validate values and send confirmation email if values are okay'
     # Validate form
     try:
         form = UserForm().to_python(valueByName, user)
     except formencode.Invalid, error:
-        return dict(isOk=0, errorByID=error.unpack_errors())
+        return {'isOk': 0, 'errorByID': error.unpack_errors()}
     # Prepare candidate
-    candidate = model.UserCandidate(form['username'], model.hashString(form['password']), form['nickname'], form['email'])
-    candidate.user_id = user.id if user else None
-    candidate.ticket = store.makeRandomUniqueTicket(parameter.TICKET_LENGTH, Session.query(model.UserCandidate))
+    candidate = UserCandidate(
+        username=form['username'], 
+        password_hash=hash_string(form['password']), 
+        nickname=form['nickname'], 
+        email=form['email'],
+        user_id=user.id if user else None,
+        ticket=make_random_unique_string(
+            TICKET_LENGTH, 
+            lambda x: db.query(UserCandidate).filter_by(ticket=x)),
+        store.makeRandomUniqueTicket(parameter.TICKET_LENGTH, Session.query(UserCandidate))
+        )
+    candidate.ticket = 
     candidate.when_expired = datetime.datetime.utcnow() + datetime.timedelta(days=parameter.TICKET_LIFESPAN_IN_DAYS)
     Session.add(candidate) 
     Session.commit()
@@ -254,16 +255,17 @@ def changeUser(valueByName, action, user=None):
     # Return
     return dict(isOk=1)
 
+
 def confirmUserCandidate(ticket):
     'Move changes from the UserCandidate table into the User table'
     # Load
-    candidate = Session.query(model.UserCandidate).filter(model.UserCandidate.ticket==ticket).filter(model.UserCandidate.when_expired>=datetime.datetime.utcnow()).first()
+    candidate = Session.query(UserCandidate).filter(UserCandidate.ticket==ticket).filter(UserCandidate.when_expired>=datetime.datetime.utcnow()).first()
     # If the ticket exists,
     if candidate:
         # If the user exists,
         if candidate.user_id:
             # Update
-            user = Session.query(model.User).get(candidate.user_id)
+            user = Session.query(User).get(candidate.user_id)
             user.username = candidate.username
             user.password_hash = candidate.password_hash
             user.nickname = candidate.nickname
@@ -273,7 +275,7 @@ def confirmUserCandidate(ticket):
         # If the user does not exist,
         else:
             # Add user
-            Session.add(model.User(candidate.username, candidate.password_hash, candidate.nickname, candidate.email))
+            Session.add(User(candidate.username, candidate.password_hash, candidate.nickname, candidate.email))
         # Commit
         Session.commit()
     # Return
@@ -294,7 +296,7 @@ class Unique(formencode.validators.FancyValidator):
         # If the user is new or the value changed,
         if not user or getattr(user, self.fieldName) != value:
             # Make sure the value is unique
-            if Session.query(model.User).filter(getattr(model.User, self.fieldName)==value).first():
+            if db.query(User).filter(getattr(User, self.fieldName)==value).first():
                 # Raise
                 raise formencode.Invalid(self.errorMessage, value, user)
         # Return

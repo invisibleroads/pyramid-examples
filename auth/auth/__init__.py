@@ -7,7 +7,8 @@ from sqlalchemy import engine_from_config
 
 from auth.models import initialize_sql
 from auth.libraries.tools import make_random_string
-from auth.views import users, parse_tokens
+from auth.views import users
+from auth.views.users import parse_tokens
 
 
 def main(global_config, **settings):
