@@ -1,15 +1,21 @@
 <%inherit file='/base.mak'/>
 
 <%def name='title()'>Users</%def>
+
 <%def name='css()'>
 	.nickname {text-align: center}
 	.when_login {text-align: center}
 </%def>
-<%def name='toolbar()'>${len(users)} users</%def>
+
+<%def name='toolbar()'>
+	${len(users)} users
+</%def>
+
 <%def name='root()'>
 	<link rel=stylesheet href="${request.static_url('auth:static/dataTables/style.css')}">
 	<script src="${request.static_url('auth:static/dataTables/jquery.dataTables.min.js')}"></script>
 </%def>
+
 <%def name='js()'>
 	function computeTableHeight() {
 		return $(window).height() - 100;
@@ -18,9 +24,7 @@
 		'bInfo': false,
 		'bPaginate': false,
 		'sScrollY': computeTableHeight(),
-		'oLanguage': {
-			'sSearch': 'Filter'
-		}
+		'oLanguage': {'sSearch': 'Filter'}
 	});
 	$(window).bind('resize', function() {
 		$('.dataTables_scrollBody').height(computeTableHeight());

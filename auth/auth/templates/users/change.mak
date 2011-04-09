@@ -1,40 +1,37 @@
-<%inherit file='/base.mako'/>
+<%inherit file='/base.mak'/>
 
 <%def name='title()'>Account ${'Registration' if c.isNew else 'Update'}</%def>
 
 <%def name='css()'>
-.field {width: 15em}
-.inactive {color: gray}
+	.field {width: 15em}
+	.inactive {color: gray}
 </%def>
 
 <%def name='js()'>
-// Save descriptions
-function getMessageObj(id) {
-    return $('#m_' + id);
-}
+// Save default descriptions
+var ids = ['username', 'password', 'nickname', 'email', 'status'];
+function getMessageObj(id) {return $('#m_' + id)}
 function showMessageByID(messageByID) {
-    var focusSet = false;
-    for (var i = 0; i < ids.length; i++) {
-        var id = ids[i];
+	var focused = false;
+	$(ids).each(function(id) {
         var message = messageByID[id];
         var messageObj = getMessageObj(id);
         if (message) {
             messageObj.html('<b>' + message + '</b>');
-            if (!focusSet) {
+            if (!focused) {
                 $('#' + id).focus().select();
-                focusSet = true;
+                focused = true;
             }
         } else {
             messageObj.html(defaultByID[id]);
         }
-    }
+	});
 }
-var ids = ['username', 'password', 'nickname', 'email', 'status'];
 var defaultByID = {};
-for (var i = 0; i < ids.length; i++) {
-    var id = ids[i];
+$(ids).each(function(id) {
     defaultByID[id] = getMessageObj(id).html();
-}
+});
+// ...
 // Define button behavior
 function ajax_save() {
     var username = $('#username').val(),
@@ -102,13 +99,10 @@ $('#email').keydown(function(e) {if (e.keyCode == 13) ajax_save()});
 $('#username').focus();
 </%def>
 
-<%def name="toolbar()">
-${'Register for an account' if c.isNew else 'Update your account'}
+<%def name='toolbar()'>
+	${'Register for an account' if c.isNew else 'Update your account'}
 </%def>
 
-<%
-from pylons import config
-%>
 <table>
     <tr>
         <td class=label><label for=username>Username</label></td>

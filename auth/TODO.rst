@@ -1,2 +1,4 @@
+- fix register and register_
+- fix confirm and confirm_
 - fix datetime format for /users
 - fix whenIO to use pytz and display timezone

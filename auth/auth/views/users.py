@@ -30,13 +30,15 @@ def add_routes(config):
     config.add_route('user_reset', 'users/reset')
 
 
-@view_config(route_name='user_index', renderer='users/index.mak', permission='__no_permission_required__')
+@view_config(route_name='user_index', renderer='users/index.mak', 
+    permission='__no_permission_required__')
 def index(request):
     'Show information about people registered in the database'
     return {'users': db.query(User).order_by(User.when_login.desc()).all()}
 
 
-@view_config(route_name='user_register', renderer='users/change.mak', request_method='GET')
+@view_config(route_name='user_register', renderer='users/change.mak', 
+    permission='__no_permission_required__', request_method='GET')
 def register(request):
     'Show account registration page'
     return {'isNew': True}
