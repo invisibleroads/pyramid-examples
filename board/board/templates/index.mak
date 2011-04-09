@@ -10,7 +10,7 @@
 	<div id=posts>
 		<%include file='index_.mak'/>
 	</div>
-	<script src="${request.static_url('board:static/jquery-1.5.1.min.js')}"></script>
+	<script src="${request.static_url('board:static/jquery-1.5.2.min.js')}"></script>
 	<script>
 		function add() {
 			// Get text

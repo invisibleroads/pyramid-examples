@@ -9,6 +9,7 @@ from auth.models import initialize_sql
 from auth.libraries.tools import make_random_string
 from auth.views import users
 from auth.views.users import parse_tokens
+from auth.parameters import SITE_NAME, SITE_VERSION
 
 
 def main(global_config, **settings):
@@ -18,10 +19,12 @@ def main(global_config, **settings):
     initialize_sql(engine)
     # Prepare configuration
     def get_groups(userID, request):
+        'Return a list of groups associated with the authenticated user'
         identity = authenticationPolicy.cookie.identify(request)
         if identity:
             return identity['tokens'][1:]
     def make_renderer_globals(system):
+        'Define template constants'
         identity = authenticationPolicy.cookie.identify(system['request'])
         if identity:
             userID = identity['userid']
@@ -30,8 +33,8 @@ def main(global_config, **settings):
             userID = None
             nickname, groups = u'', []
         return {
-            'SITE_NAME': 'Auth',
-            'SITE_VERSION': '0.0',
+            'SITE_NAME': SITE_NAME,
+            'SITE_VERSION': SITE_VERSION,
             'USER_ID': userID,
             'USER_GROUPS': groups,
             'USER_NICKNAME': nickname,
@@ -45,6 +48,10 @@ def main(global_config, **settings):
         renderer_globals_factory=make_renderer_globals,
         root_factory='auth.RootFactory',
         settings=settings)
+    # Configure static assets
+    config.add_static_view('static', 'auth:static')
+    # Configure mailer
+    config.include('pyramid_mailer')
     # Configure routes for user account management
     config.scan(users)
     config.include(users.add_routes)

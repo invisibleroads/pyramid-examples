@@ -49,9 +49,9 @@ class User(Base):
         return ['super'] if self.is_super else []
 
 
-class UserCandidate(Base):
-    'A user candidate'
-    __tablename__ = 'user_candidates'
+class User_(Base):
+    'An unconfirmed change to a user account'
+    __tablename__ = 'users_'
     id = Column(Integer, primary_key=True)
     username = column_property(
         Column(String(USERNAME_LENGTH_MAXIMUM)), 
@@ -68,7 +68,7 @@ class UserCandidate(Base):
     when_expired = Column(DateTime)
 
     def __repr__(self):
-        return "<UserCandidate('%s')>" % self.email
+        return "<User_('%s')>" % self.email
 
 
 class SMSAddress(Base):

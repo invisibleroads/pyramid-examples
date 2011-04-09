@@ -1,27 +1,11 @@
-/*
-    $('input').addClass('normalFONT');
-    $('textarea').addClass('normalFONT');
-    $('select').addClass('normalFONT');
-    body normalFONT
-*/
-
-/* General */
 a {text-decoration: none}
-
-/* Structure */
-#main {position: fixed; top: 2em; left: 0; right: 0; bottom: 0; z-index: 5; overflow: auto}
-#header {position: fixed; top: 0; left: 0; right: 0; height: 2em}
-
-/* Elements */
+#main {position: fixed; top: 2em; left: 0; right: 0; bottom: 0; overflow: auto}
+#header {position: fixed; top: 0; left: 0; right: 0; height: 2em; overflow: auto}
 #toolbar {position: absolute; top: 0; left: 0}
 #navigation {position: absolute; top: 0; right: 0; text-align: right}
-
-/* Font */
-.normalFONT {font-family: Helvetica, Arial, sans-serif}
-
-/* Hover */ 
-.linkOFF {color: darkblue; background-color: white} 
-.linkON {color: white; background-color: darkblue}
-
-/* Bits */
-.maximumWidth {width: 100%}
+body {font-family: Helvetica, Arial, sans-serif}
+input {font-family: inherit}
+textarea {font-family: inherit}
+select {font-family: inherit}
+.link.off {color: darkblue; background-color: white}
+.link.on {color: white; background-color: darkblue}

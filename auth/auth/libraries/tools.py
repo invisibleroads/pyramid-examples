@@ -1,10 +1,9 @@
 'General purpose tools'
 import hashlib
 import random
-import string
 
 
-alphabet = string.letters + string.digits
+alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 
 def hash_string(string): 
@@ -23,13 +22,14 @@ def make_random_unique_string(length, is_unique):
     checks whether the string is unique
     """
     # Initialize
-    numberOfPossibilities = len(letters + numbers) ** length
     iterationCount = 0
-    # Loop through possibilities until our randomID is unique
-    while iterationCount < numberOfPossibilities:
+    permutationCount = len(alphabet) ** length
+    while iterationCount < permutationCount:
         # Make randomID
+        randomID = make_random_string(length)
         iterationCount += 1
-        randomID = makeRandomString(length)
         # If our randomID is unique, return it
-        if not query.filter_by(ticket=randomID).first(): 
+        if is_unique(randomID):
             return randomID
+    # Raise exception if we have no more permutations left
+    raise RuntimeError('Could not create a unique string')
