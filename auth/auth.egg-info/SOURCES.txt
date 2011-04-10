@@ -1,6 +1,7 @@
 CHANGES.rst
 MANIFEST.in
 README.rst
+TODO.rst
 development.ini
 production.ini
 setup.cfg
@@ -20,7 +21,15 @@ auth.egg-info/top_level.txt
 auth/libraries/__init__.py
 auth/libraries/tools.py
 auth/static/favicon.ico
+auth/static/jquery-1.5.2.min.js
 auth/static/style.css
+auth/static/dataTables/jquery.dataTables.min.js
+auth/static/dataTables/sort_asc.png
+auth/static/dataTables/sort_asc_disabled.png
+auth/static/dataTables/sort_both.png
+auth/static/dataTables/sort_desc.png
+auth/static/dataTables/sort_desc_disabled.png
+auth/static/dataTables/style.css
 auth/templates/base.mak
 auth/templates/form.mak
 auth/templates/home.mak

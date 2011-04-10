@@ -6,17 +6,12 @@
 	<title>${SITE_NAME} ${self.title()}</title>
 	<link rel='shortcut icon' href='${request.static_url('auth:static/favicon.ico')}'/>
 	<link rel=stylesheet href='${request.static_url('auth:static/style.css')}'>
-	<style>
-		${self.css()}
-	</style>
+	<style>${self.css()}</style>
 </head>
 <body>
 <div id=header>
-	<div id=toolbar>
-		${self.toolbar()}
-	</div>
-	<div id=navigation>
-		${self.navigation()}
+	<div id=toolbar>${self.toolbar()}</div>
+	<div id=navigation>${self.navigation()}
 	<%
 		linkPacks = [
 			('Users', request.route_url('user_index')),
@@ -26,7 +21,7 @@
 	%>
 % for linkName, linkURL in linkPacks:
 	&nbsp;
-	% if request.path != linkURL:
+	% if request.url != linkURL:
 		<a href='${linkURL}' class='hover link off'>${linkName}</a>
 	% else:
 		<b>${linkName}</b>
@@ -35,7 +30,7 @@
 	% if USER_ID:
 		&nbsp;
 		<a href="${request.route_url('user_logout', url=request.path)}" class='hover link off'>Logout</a>
-	% elif request.path != request.route_url('user_login'):
+	% elif request.url != request.route_url('user_login'):
 		&nbsp;
 		<a href="${request.route_url('user_login', url=request.path)}" class='hover link off'>Login</a>
 	% else:
@@ -57,7 +52,7 @@ ${self.root()}
 	${self.js()}
 </script>
 </body>
-</html>
+</html>\
 
 <%def name='title()'></%def>\
 <%def name='css()'></%def>\

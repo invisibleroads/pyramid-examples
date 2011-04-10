@@ -7,7 +7,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 import transaction
 
 from auth.libraries.tools import hash_string, make_random_string
-from auth.parameters import USERNAME_LENGTH_MAXIMUM, PASSWORD_LENGTH, NICKNAME_LENGTH_MAXIMUM, EMAIL_LENGTH_MAXIMUM, TICKET_LENGTH
+from auth.parameters import *
 
 
 db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))

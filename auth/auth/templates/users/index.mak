@@ -3,51 +3,58 @@
 <%def name='title()'>Users</%def>
 
 <%def name='css()'>
-	.nickname {text-align: center}
-	.when_login {text-align: center}
+td {text-align: center}
 </%def>
 
 <%def name='toolbar()'>
-	${len(users)} users
+${len(users)} users
 </%def>
 
 <%def name='root()'>
-	<link rel=stylesheet href="${request.static_url('auth:static/dataTables/style.css')}">
-	<script src="${request.static_url('auth:static/dataTables/jquery.dataTables.min.js')}"></script>
+<link rel=stylesheet href="${request.static_url('auth:static/dataTables/style.css')}">
+<script src="${request.static_url('auth:static/dataTables/jquery.dataTables.min.js')}"></script>
+<script src="${request.static_url('auth:static/dataTables/jquery.dataTables.titleString.min.js')}"></script>
 </%def>
 
 <%def name='js()'>
-	function computeTableHeight() {
-		return $(window).height() - 100;
-	}
-	$('#users').dataTable({
-		'bInfo': false,
-		'bPaginate': false,
-		'sScrollY': computeTableHeight(),
-		'oLanguage': {'sSearch': 'Filter'}
-	});
-	$(window).bind('resize', function() {
-		$('.dataTables_scrollBody').height(computeTableHeight());
-	});
-	$('.dataTables_filter input').focus();
+function computeTableHeight() {
+	return $(window).height() - 100;
+}
+var usersTable = $('#users').dataTable({
+	'aaSorting': [[1, 'desc']],
+	'aoColumns': [
+		{'sType': 'string'},
+		{'sType': 'title-string'}
+	],
+	'bInfo': false,
+	'bPaginate': false,
+	'oLanguage': {'sSearch': 'Filter'},
+	'sScrollY': computeTableHeight()
+});
+$(window).bind('resize', function() {
+	$('.dataTables_scrollBody').height(computeTableHeight());
+	usersTable.fnAdjustColumnSizing();
+});
+$('.dataTables_filter input').focus();
 </%def>
 
 <table id=users>
 	<thead>
 		<tr>
-			<th class=nickname>Nickname</th>
-			<th class=when_login>Last Login</th>
+			<th>Nickname</th>
+			<th>Last Login</th>
 		</tr>
 	</thead>
 	<tbody>
 	% for user in users:
 		<tr>
-			<td class=nickname>${user.nickname}</td>
-			<td class=when_login>
+			<td>${user.nickname}</td>
 			% if user.when_login:
+			<td>
+				<span title="${user.when_login.strftime('%Y%m%d%H%M%S')}"></span>
 				${user.when_login}
-			% endif
 			</td>
+			% endif
 		</tr>
 	% endfor
 	</tbody>

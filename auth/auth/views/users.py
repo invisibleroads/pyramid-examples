@@ -6,7 +6,7 @@ from pyramid.renderers import render
 from pyramid_mailer import get_mailer
 from pyramid_mailer.message import Message
 from recaptcha.client import captcha
-from formencode import htmlfill, validators, Schema, All, Invalid
+from formencode import validators, Schema, All, Invalid
 from sqlalchemy.orm import joinedload
 from email.utils import formataddr
 import transaction
@@ -15,8 +15,8 @@ import datetime
 import cStringIO as StringIO
 
 from auth.models import db, User, User_
-from auth.libraries.tools import hash_string, make_random_string
-from auth.parameters import USERNAME_LENGTH_MINIMUM, USERNAME_LENGTH_MAXIMUM, PASSWORD_LENGTH_MINIMUM, NICKNAME_LENGTH_MINIMUM, NICKNAME_LENGTH_MAXIMUM, TICKET_LENGTH
+from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
+from auth.parameters import *
 
 
 def add_routes(config):
@@ -41,13 +41,19 @@ def index(request):
     permission='__no_permission_required__', request_method='GET')
 def register(request):
     'Show account registration page'
-    return {'isNew': True}
+    return {
+        'isNew': True,
+        'username': '',
+        'nickname': u'',
+        'email': '',
+    }
 
 
-@view_config(route_name='user_register', renderer='json', request_method='POST')
+@view_config(route_name='user_register', renderer='json', 
+    permission='__no_permission_required__', request_method='POST')
 def register_(request):
     'Store proposed changes and send confirmation email'
-    return save_user_(dict(request.params), 'registration')
+    return save_user_(request, dict(request.params), 'registration')
 
 
 @view_config(route_name='user_confirm')
@@ -105,7 +111,7 @@ def login_(request):
     if not user:
         return dict(isOk=0)
     # Check password
-    password_hash = hashString(str(request.POST.get('password', '')))
+    password_hash = hash_string(str(request.POST.get('password', '')))
     # If the password is incorrect,
     if password_hash != StringIO.StringIO(user.password_hash).read():
         # Increase and return rejection_count without a requery
@@ -142,7 +148,7 @@ def login_(request):
 def update(request):
     'Show account update page'
     # Render
-    user = db.query(User).options(orm.joinedload(User.sms_addresses)).get(h.getUserID())
+    user = db.query(User).options(joinedload(User.sms_addresses)).get(h.getUserID())
     c.isNew = False
     c.smsAddresses = user.sms_addresses
     # Return
@@ -185,7 +191,7 @@ def update_(request):
     # If the user is trying to update account information,
     else:
         # Send update confirmation email
-        return changeUser(dict(request.POST), 'update', db.query(User).get(userID))
+        return save_user_(request, dict(request.params), 'update', db.query(User).get(userID))
 
 
 @view_config(route_name='user_logout')
@@ -215,7 +221,7 @@ def reset(request):
     if not user: 
         return dict(isOk=0)
     # Reset account
-    return save_user_(dict(
+    return save_user_(request, dict(
         username=user.username, 
         password=make_random_string(PASSWORD_LENGTH), 
         nickname=user.nickname, 
@@ -223,7 +229,7 @@ def reset(request):
     ), 'reset', user)
 
 
-def save_user_(valueByName, action, user=None):
+def save_user_(request, valueByName, action, user=None):
     'Validate values and send confirmation email if values are okay'
     # Validate form
     try:
@@ -246,14 +252,12 @@ def save_user_(valueByName, action, user=None):
         email=form['email'],
         user_id=user.id if user else None,
         ticket=ticket,
-        when_expired=lambda: datetime.datetime.utcnow() + 
-            datetime.timedelta(hours=TICKET_LIFESPAN_IN_HOURS))
+        when_expired=datetime.datetime.utcnow() + datetime.timedelta(hours=TICKET_LIFESPAN_IN_HOURS))
     db.add(user_)
     # Send message
-    get_mailer(request).send(Message(
-        sender=formataddr((SITE_NAME, SITE_EMAIL)),
+    get_mailer(request).send_to_queue(Message(
         recipients=[
-            dict(nickname=user_.nickname, email=user_.email),
+            formataddr((user_.nickname, user_.email)),
         ],
         subject='Confirm {}'.format(action),
         body=render('users/confirm.mak', {
@@ -261,7 +265,7 @@ def save_user_(valueByName, action, user=None):
             'ticket': ticket,
             'TICKET_LIFESPAN_IN_HOURS': TICKET_LIFESPAN_IN_HOURS,
             'action': action,
-        })))
+        }, request)))
     transaction.commit()
     # Return
     return dict(isOk=1)

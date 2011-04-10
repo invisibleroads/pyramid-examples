@@ -5,7 +5,7 @@ Username: ${form['username']}
 Password: ${form['password']}
 % endif
 
-Please click on the link below to complete your ${action}.
-## ${request.relative_url(h.url('person_confirm', ticket=c.ghost.ticket), to_application=True)}
+Please open the link below to complete your ${action}.
+${request.route_url('user_confirm', ticket=ticket)}
 
 This ticket expires in ${TICKET_LIFESPAN_IN_HOURS} hours.

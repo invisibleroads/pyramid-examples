@@ -13,6 +13,7 @@ def main(global_config, **settings):
     initialize_sql(engine)
     # Define methods
     def make_renderer_globals(system):
+        'Define template constants'
         return {
             'SITE_NAME': 'Board',
         }

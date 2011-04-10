@@ -17,7 +17,7 @@ def main(global_config, **settings):
     # Connect to database
     engine = engine_from_config(settings, 'sqlalchemy.')
     initialize_sql(engine)
-    # Prepare configuration
+    # Define methods
     def get_groups(userID, request):
         'Return a list of groups associated with the authenticated user'
         identity = authenticationPolicy.cookie.identify(request)
@@ -39,6 +39,7 @@ def main(global_config, **settings):
             'USER_GROUPS': groups,
             'USER_NICKNAME': nickname,
         }
+    # Prepare configuration
     authenticationPolicy = AuthTktAuthenticationPolicy(make_random_string(32), 
         callback=get_groups)
     config = Configurator(
