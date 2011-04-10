@@ -9,16 +9,10 @@ from board.models import db, Post
 
 def index(request):
     'List posts'
-    return {
-        'token': request.session.get_csrf_token(),
-        'posts': get_posts(),
-    }
+    return {'posts': get_posts()}
 
 def add(request):
     'Add a post'
-    # Prevent CSRF abuse
-    if request.params.get('token') != request.session.get_csrf_token():
-        return ''
     # Load
     text = request.params.get('text', '').strip()
     if text:

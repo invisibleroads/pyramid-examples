@@ -1,10 +1,9 @@
 'Pyramid WSGI configuration'
 from sqlalchemy import engine_from_config
 from pyramid.config import Configurator
-import pyramid_beaker
+from pyramid_beaker import set_cache_regions_from_settings
 
 from board.models import initialize_sql
-from board.libraries.tools import make_random_string
 
 
 def main(global_config, **settings):
@@ -19,10 +18,8 @@ def main(global_config, **settings):
         }
     # Prepare configuration
     config = Configurator(settings=settings, renderer_globals_factory=make_renderer_globals)
-    # Configure sessions and caching
-    settings['session.secret'] = make_random_string(32)
-    config.set_session_factory(pyramid_beaker.session_factory_from_settings(settings))
-    pyramid_beaker.set_cache_regions_from_settings(settings)
+    # Configure caching
+    set_cache_regions_from_settings(settings)
     # Configure routes
     config.add_static_view('static', 'board:static')
     config.add_route('index', '/', view='board.views.index', view_renderer='index.mak', request_method='GET')
