@@ -37,7 +37,7 @@ def index(request):
     return {'users': db.query(User).order_by(User.when_login.desc()).all()}
 
 
-@view_config(route_name='user_register', renderer='users/change.mak', 
+@view_config(route_name='user_register', renderer='users/change.mak',
     permission='__no_permission_required__', request_method='GET')
 def register(request):
     'Show account registration page'
@@ -56,19 +56,22 @@ def register_(request):
     return save_user_(request, dict(request.params), 'registration')
 
 
-@view_config(route_name='user_confirm')
+@view_config(route_name='user_confirm', permission='__no_permission_required__')
 def confirm(request):
     'Confirm changes'
-    ticket = request.matchdict['ticket']
-    # Send feedback
-    user_ = apply_user_(ticket)
+    # Apply changes to user account
+    user_ = apply_user_(request.matchdict.get('ticket', ''))
     # If the user_ exists,
     if user_:
         # Set
         messageCode = 'updated' if user_.user_id else 'created'
-        # Delete expired or similar user_s
-        db.execute(User_.__table__.delete().where((User_.when_expired < datetime.datetime.utcnow()) | (User_.username == user_.username) | (User_.nickname == user_.nickname) | (User_.email == user_.email)))
-        db.commit()
+        # Delete expired or similar user_
+        db.execute(User_.__table__.delete().where(
+            (User_.when_expired < datetime.datetime.utcnow()) | 
+            (User_.username == user_.username) | 
+            (User_.nickname == user_.nickname) | 
+            (User_.email == user_.email)))
+        transaction.commit()
     # If the user_ does not exist,
     else:
         # Set
