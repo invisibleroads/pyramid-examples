@@ -21,7 +21,7 @@
 				return;
 			}
 			// Add post
-			$.post("${request.route_url('board:add')}", {
+			$.post("${request.route_url('add')}", {
 				text: text
 			}, function(data) {
 				$('#posts').html(data);
