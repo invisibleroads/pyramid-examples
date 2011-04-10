@@ -22,6 +22,7 @@
 			}
 			// Add post
 			$.post("${request.route_url('add')}", {
+				token: '${token}',
 				text: text
 			}, function(data) {
 				$('#posts').html(data);

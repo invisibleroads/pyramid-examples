@@ -8,14 +8,25 @@ from board.models import db, Post
 # Core
 
 def index(request):
-    return {'posts': get_posts()}
+    'List posts'
+    return {
+        'token': request.session.get_csrf_token(),
+        'posts': get_posts(),
+    }
 
 def add(request):
+    'Add a post'
+    # Prevent CSRF abuse
+    if request.params.get('token') != request.session.get_csrf_token():
+        return ''
+    # Load
     text = request.params.get('text', '').strip()
     if text:
+        # Add
         db.add(Post(text))
         transaction.commit()
         region_invalidate(get_posts, None)
+    # Return
     return index(request)
 
 
