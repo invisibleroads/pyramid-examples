@@ -1,26 +1,44 @@
-<%inherit file="/base.mako"/>
+<%inherit file='/base.mak'/>
 
-<%def name="title()">Login</%def>
+<%def name='title()'>Login</%def>
 
-<%def name="head()">
-${h.javascript_link('/files/recaptcha_ajax.js')}
-</%def>
-
-<%def name="css()">
-#reset {display: none}
+<%def name='css()'>
+#resetPack {display: none}
 #resetForm {display: none}
 </%def>
 
-<%def name="js()">
-// Prepare login form
+<%def name='toolbar()'>
+<a class='hover link off' href="${request.route_url('user_register')}">Register for an account</a>
+</%def>
+
+<%def name='root()'>
+<script src="${request.static_url('auth:static/recaptcha_ajax.js')}"></script>
+</%def>
+
+<%def name='js()'>
+// Define global variables
 var rejection_count = 0;
-function ajax_login() {
+
+// Define functions
+function isEmpty(inputID) {
+    var input = $('#' + inputID);
+    var output = $('#m_' + inputID);
+    if (input.val() == '') {
+        output.text('You must provide a ' + inputID);
+        input.focus();
+        return 1;
+    } else {
+        output.text('');
+        return 0;
+    }
+}
+function login() {
     // Validate
     var errorCount = 0;
     errorCount = errorCount + isEmpty('username');
     errorCount = errorCount + isEmpty('password');
     if (errorCount) {
-        $('#reset').hide();
+        $('#resetPack').hide();
         return;
     }
     // Initialize
@@ -35,52 +53,27 @@ function ajax_login() {
         loginData['recaptcha_response_field'] = $('#recaptcha_response_field').val();
     }
     // Attempt login
-    $.post("${h.url('person_login')}", loginData, function(data) {
+    $.post("${request.route_url('user_login')}", loginData, function(data) {
         if (data.isOk) {
-            window.location = "${c.url}";
+            window.location = "${url}";
         } else {
             // Give feedback
-            $('#reset').show();
+            $('#resetPack').show();
             $('#resetLink').show();
             $('#resetForm').hide();
             // Update rejection count
             rejection_count = data.rejection_count ? data.rejection_count : rejection_count + 1;
             // If there have been too many rejections,
-            if (rejection_count >= ${h.REJECTION_LIMIT}) {
-                Recaptcha.create("${c.recaptchaPublicKey}", 'recaptcha', {
+            if (rejection_count >= ${REJECTION_LIMIT}) {
+                Recaptcha.create("${request.registry.settings.get('recaptcha.public', '')}", 'recaptcha', {
                     theme: 'red',
                     callback: Recaptcha.focus_response_field
                 });
             }
         }
-    }, 'json');
+    });
 }
-$('#login_button').click(ajax_login);
-function isEmpty(inputID) {
-    var input = $('#' + inputID);
-    var output = $('#m_' + inputID);
-    if (input.val() == '') {
-        output.text('You must provide a ' + inputID);
-        input.focus();
-        return 1;
-    } else {
-        output.text('');
-        return 0;
-    }
-}
-$('#username').keydown(function(e) {if (e.keyCode == 13) $('#password').focus()});
-$('#password').keydown(function(e) {if (e.keyCode == 13) ajax_login()});
-
-// Prepare reset form
-$('#resetLink').click(function() {
-    $('#resetLink').hide();
-    $('#resetForm').show();
-    $('#resetEmail').val('').keydown(function(e) {
-        if (e.keyCode == 13) ajax_reset();
-    }).focus();
-});
-$('#resetButton').click(ajax_reset);
-function ajax_reset() {
+function reset() {
     // Check that the email is not empty
     var email = $.trim($('#resetEmail').val());
     if (!email) {
@@ -89,7 +82,7 @@ function ajax_reset() {
     }
     // Post
     $('.lockOnReset').attr('disabled', true);
-    $.post("${h.url('person_reset')}", {
+    $.post("${request.route_url('user_reset')}", {
         'email': email
     }, function(data) {
         if (data.isOk) {
@@ -98,52 +91,59 @@ function ajax_reset() {
             $('#m_password').html('Email not found');
             $('.lockOnReset').removeAttr('disabled');
         }
-    }, 'json');
+    });
 }
 
-// Configure
-$('#username').focus();
-$('#minutes_offset').val(new Date().getTimezoneOffset());
-</%def>
+// Prepare login form
+$('#login').click(login);
+$('#username').keydown(function(e) {if (e.keyCode == 13) $('#password').focus()});
+$('#password').keydown(function(e) {if (e.keyCode == 13) login()});
 
-<%def name="toolbar()">
-<a class=linkOFF href="${h.url('person_register')}" id=register>Register for an account</a>
+// Prepare reset form
+$('#resetLink').click(function() {
+    $('#resetLink').hide();
+    $('#resetForm').show();
+    $('#resetEmail').val('').keydown(function(e) {if (e.keyCode == 13) reset()}).focus();
+});
+$('#reset').click(reset);
+
+// Configure
+$('#minutes_offset').val(new Date().getTimezoneOffset());
+$('#username').focus();
 </%def>
 
 <table>
-<tr>
-<td><label for=username>Username</label></td>
-<td><input id=username></td>
-<td>
-<span id=m_username>
-${dict(updated='Account updated', created='Account created', expired='Ticket expired').get(c.messageCode, '')}
-</span>
-<span id=reset>
-<a id=resetLink class=linkOFF>Did you forget your login?</a>
-<span id=resetForm>
-Email
-<input class=lockOnReset id=resetEmail>
-<input class=lockOnReset id=resetButton type=button value=Reset>
-</span>
-</span>
-</td>
-</tr>
-<tr>
-<td><label for=password>Password</label></td>
-<td><input id=password type=password></td>
-<td id=m_password></td>
-</tr>
-<tr>
-<td><label for=minutes_offset>Time</label</td>
-<td>
-<select id=minutes_offset>
-<%include file='/people/offsets.mako'/>\
-</select>
-</td>
-<td id=m_minutes_offset></td>
-</tr>
+	<tr>
+		<td><label for=username>Username</label></td>
+		<td><input id=username></td>
+		<td>
+			<span id=m_username>${'. '.join(request.session.pop_flash())}</span>
+			<span id=resetPack>
+				<a id=resetLink class='hover link off'>Did you forget your login?</a>
+				<span id=resetForm>
+					Email
+					<input class=lockOnReset id=resetEmail>
+					<input class=lockOnReset id=reset type=button value=Reset>
+				</span>
+			</span>
+		</td>
+	</tr>
+	<tr>
+		<td><label for=password>Password</label></td>
+		<td><input id=password type=password></td>
+		<td id=m_password></td>
+	</tr>
+	<tr>
+		<td><label for=minutes_offset>Time</label</td>
+		<td>
+			<select id=minutes_offset>
+				<%include file='offsets.mak'/>
+			</select>
+		</td>
+		<td id=m_minutes_offset></td>
+	</tr>
 </table>
 <div id=recaptcha></div>
-<input id=login_button type=button value=Login><br>
+<input id=login type=button value=Login><br>
 <br>
-<a class=linkOFF href="/docs">Read documentation for ${h.SITE_NAME} v${h.SITE_VERSION}</a>
+<a href='/docs' class='hover link off'>Read documentation for ${SITE_NAME} ${SITE_VERSION}</a>

@@ -1,17 +1,25 @@
 'Views'
-import transaction
+from pyramid.view import view_config
 from beaker.cache import cache_region, region_invalidate
+import transaction
 
 from board.models import db, Post
 
 
-# Core
+def add_routes(config):
+    'Add routes'
+    config.add_route('index', '')
+    config.add_route('debug', 'debug')
 
+
+@view_config(route_name='index', renderer='index.mak', request_method='GET') 
 def index(request):
     'List posts'
     return {'posts': get_posts()}
 
-def add(request):
+
+@view_config(route_name='index', renderer='index_.mak', request_method='POST') 
+def index_(request):
     'Add a post'
     # Load
     text = request.params.get('text', '').strip()
@@ -24,7 +32,11 @@ def add(request):
     return index(request)
 
 
-# Side
+@view_config(route_name='debug') 
+def debug(request):
+    'Enter debugger'
+    raise Exception
+
 
 @cache_region('minute')
 def get_posts():

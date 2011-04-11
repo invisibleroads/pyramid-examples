@@ -1,13 +1,13 @@
 'Views'
 
 
-def home(request):
-    pass
+def public(request):
+    return dict()
 
 
 def protected(request):
-    return {'content': 'Protected'}
+    return dict(content='Protected')
 
 
 def privileged(request):
-    return {'content': 'Privileged'}
+    return dict(content='Privileged')

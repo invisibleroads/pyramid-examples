@@ -1,22 +1,26 @@
+# add .development.ini settings
+# fix register and register_
+# fix confirm and confirm_
+# fix datetime format for /users
+# fix whenIO to use pytz and display timezone
 'Pyramid WSGI configuration'
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import Allow, Authenticated
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from pyramid_beaker import session_factory_from_settings, set_cache_regions_from_settings
 
 from auth.models import initialize_sql
 from auth.libraries.tools import make_random_string
 from auth.views import users
-from auth.views.users import parse_tokens
 from auth.parameters import SITE_NAME, SITE_VERSION
 
 
 def main(global_config, **settings):
     'Return a Pyramid WSGI application'
     # Connect to database
-    engine = engine_from_config(settings, 'sqlalchemy.')
-    initialize_sql(engine)
+    initialize_sql(engine_from_config(settings, 'sqlalchemy.'))
     # Define methods
     def get_groups(userID, request):
         'Return a list of groups associated with the authenticated user'
@@ -28,7 +32,7 @@ def main(global_config, **settings):
         identity = authenticationPolicy.cookie.identify(system['request'])
         if identity:
             userID = identity['userid']
-            nickname, groups = parse_tokens(identity['tokens'])
+            nickname, groups = users.parse_tokens(identity['tokens'])
         else:
             userID = None
             nickname, groups = u'', []
@@ -41,7 +45,7 @@ def main(global_config, **settings):
         }
     # Prepare configuration
     authenticationPolicy = AuthTktAuthenticationPolicy(make_random_string(32), 
-        callback=get_groups)
+        callback=get_groups, http_only=True)
     config = Configurator(
         authentication_policy=authenticationPolicy,
         authorization_policy=ACLAuthorizationPolicy(),
@@ -49,23 +53,28 @@ def main(global_config, **settings):
         renderer_globals_factory=make_renderer_globals,
         root_factory='auth.RootFactory',
         settings=settings)
-    # Configure static assets
-    config.add_static_view('static', 'auth:static')
+    # Configure sessions and caching
+    settings['session.secret'] = make_random_string(32)
+    config.set_session_factory(session_factory_from_settings(settings))
+    set_cache_regions_from_settings(settings)
     # Configure mailer
     config.include('pyramid_mailer')
+    # Configure static assets
+    config.add_static_view('static', 'auth:static')
     # Configure routes for user account management
     config.scan(users)
     config.include(users.add_routes)
     # Configure routes
-    config.add_route('home', '',
-        view='auth.views.home',
-        view_renderer='home.mak')
+    config.add_route('public', '', 
+        view='auth.views.public', 
+        view_renderer='page.mak', 
+        permission='__no_permission_required__')
     config.add_route('protected', '/protected', 
-        view='auth.views.protected',
+        view='auth.views.protected', 
         view_renderer='page.mak',
         permission='protected')
     config.add_route('privileged', '/privileged', 
-        view='auth.views.privileged',
+        view='auth.views.privileged', 
         view_renderer='page.mak',
         permission='privileged')
     # Return WSGI app

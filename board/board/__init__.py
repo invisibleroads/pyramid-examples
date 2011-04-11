@@ -4,6 +4,7 @@ from pyramid.config import Configurator
 from pyramid_beaker import set_cache_regions_from_settings
 
 from board.models import initialize_sql
+from board import views
 
 
 def main(global_config, **settings):
@@ -13,16 +14,15 @@ def main(global_config, **settings):
     # Define methods
     def make_renderer_globals(system):
         'Define template constants'
-        return {
-            'SITE_NAME': 'Board',
-        }
+        return {'SITE_NAME': 'Board'}
     # Prepare configuration
     config = Configurator(settings=settings, renderer_globals_factory=make_renderer_globals)
     # Configure caching
     set_cache_regions_from_settings(settings)
-    # Configure routes
+    # Configure static assets
     config.add_static_view('static', 'board:static')
-    config.add_route('index', '/', view='board.views.index', view_renderer='index.mak', request_method='GET')
-    config.add_route('add', '/', view='board.views.add', view_renderer='index_.mak', request_method='POST')
+    # Configure routes
+    config.scan(views)
+    config.include(views.add_routes)
     # Return WSGI app
     return config.make_wsgi_app()

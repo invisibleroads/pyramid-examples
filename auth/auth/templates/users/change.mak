@@ -1,3 +1,4 @@
+## add CSRF
 <%inherit file='/base.mak'/>
 
 <%def name='title()'>Account ${'Registration' if isNew else 'Update'}</%def>

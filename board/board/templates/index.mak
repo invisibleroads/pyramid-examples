@@ -7,6 +7,7 @@
 <body>
 	<input id=text>
 	<input id=add type=button value=Add>
+	<a href="${request.route_url('debug')}">Debug</a>
 	<div id=posts>
 		<%include file='index_.mak'/>
 	</div>
@@ -21,7 +22,7 @@
 				return;
 			}
 			// Add post
-			$.post("${request.route_url('add')}", {
+			$.post("${request.route_url('index')}", {
 				text: text
 			}, function(data) {
 				$('#posts').html(data);

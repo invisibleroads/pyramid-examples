@@ -13,25 +13,26 @@
 	<div id=toolbar>${self.toolbar()}</div>
 	<div id=navigation>${self.navigation()}
 	<%
-		linkPacks = [
-			('Users', request.route_url('user_index')),
-		]
-		if USER_ID:
-			linkPacks.append((USER_NICKNAME, request.route_url('user_update')))
+	url = request.url
+	linkPacks = [
+		('Home', request.route_url('public')),
+		('Users', request.route_url('user_index')),
+	]
+	if USER_ID:
+		linkPacks.append((USER_NICKNAME, request.route_url('user_update')))
 	%>
 % for linkName, linkURL in linkPacks:
 	&nbsp;
-	% if request.url != linkURL:
+	% if url != linkURL:
 		<a href='${linkURL}' class='hover link off'>${linkName}</a>
 	% else:
 		<b>${linkName}</b>
 	% endif
 % endfor
+	&nbsp;
 	% if USER_ID:
-		&nbsp;
 		<a href="${request.route_url('user_logout', url=request.path)}" class='hover link off'>Logout</a>
-	% elif request.url != request.route_url('user_login'):
-		&nbsp;
+	% elif url != request.route_url('user_login') and request.exception.__class__.__name__ != 'Forbidden':
 		<a href="${request.route_url('user_login', url=request.path)}" class='hover link off'>Login</a>
 	% else:
 		<b>Login</b>

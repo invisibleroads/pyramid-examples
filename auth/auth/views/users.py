@@ -12,7 +12,6 @@ from email.utils import formataddr
 import transaction
 import base64
 import datetime
-import cStringIO as StringIO
 
 from auth.models import db, User, User_
 from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
@@ -30,33 +29,34 @@ def add_routes(config):
     config.add_route('user_reset', 'users/reset')
 
 
-@view_config(route_name='user_index', renderer='users/index.mak', 
+@view_config(route_name='user_index', 
+    renderer='users/index.mak', 
     permission='__no_permission_required__')
 def index(request):
     'Show information about people registered in the database'
-    return {'users': db.query(User).order_by(User.when_login.desc()).all()}
+    return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
-@view_config(route_name='user_register', renderer='users/change.mak',
-    permission='__no_permission_required__', request_method='GET')
+@view_config(route_name='user_register', 
+    renderer='users/change.mak', 
+    request_method='GET',
+    permission='__no_permission_required__')
 def register(request):
     'Show account registration page'
-    return {
-        'isNew': True,
-        'username': '',
-        'nickname': u'',
-        'email': '',
-    }
+    return dict(isNew=True, username='', nickname=u'', email='')
 
 
-@view_config(route_name='user_register', renderer='json', 
-    permission='__no_permission_required__', request_method='POST')
+@view_config(route_name='user_register', 
+    renderer='json', 
+    request_method='POST',
+    permission='__no_permission_required__')
 def register_(request):
     'Store proposed changes and send confirmation email'
     return save_user_(request, dict(request.params), 'registration')
 
 
-@view_config(route_name='user_confirm', permission='__no_permission_required__')
+@view_config(route_name='user_confirm', 
+    permission='__no_permission_required__')
 def confirm(request):
     'Confirm changes'
     # Apply changes to user account
@@ -64,7 +64,7 @@ def confirm(request):
     # If the user_ exists,
     if user_:
         # Set
-        messageCode = 'updated' if user_.user_id else 'created'
+        message = 'Account updated' if user_.user_id else 'Account created'
         # Delete expired or similar user_
         db.execute(User_.__table__.delete().where(
             (User_.when_expired < datetime.datetime.utcnow()) | 
@@ -75,63 +75,72 @@ def confirm(request):
     # If the user_ does not exist,
     else:
         # Set
-        messageCode = 'expired'
+        message = 'Ticket expired'
+    # Save flash in session
+    request.session.flash(message)
     # Return
-    return redirect(url('user_login', url='/', messageCode=messageCode))
+    return HTTPFound(location=request.route_url('user_login'))
 
 
-@view_config(route_name='user_login', renderer='users/login.mak', request_method='GET', context='pyramid.exceptions.Forbidden')
+@view_config(route_name='user_login', 
+    renderer='users/login.mak', 
+    request_method='GET', 
+    permission='__no_permission_required__')
+@view_config(
+    renderer='users/login.mak', 
+    context='pyramid.exceptions.Forbidden',
+    permission='__no_permission_required__')
 def login(request):
     'Show login form'
-    c.url = request.GET.get('url', '/')
-    c.messageCode = request.GET.get('messageCode')
-    c.recaptchaPublicKey = config.get('recaptcha.public', '')
-    if request.url == request.route_url('login'):
-        targetURL = request.params.get('targetURL', request.route_url('index'))
-        if 'submitted' in request.params:
-            username = request.params.get('username', '')
-            password_hash = hash_string(request.params.get('password', ''))
-            user = db.query(User).filter(
-                (User.username==username) & 
-                (User.password_hash==password_hash)
-            ).first()
-            if user:
-                headers = remember(request, user.id, tokens=format_tokens(user))
-                return HTTPFound(location=targetURL, headers=headers)
+    # If the user accessed the login page directly,
+    if request.url == request.route_url('user_login'):
+        # Get the target url from the query string
+        url = request.params.get('url', '/')
+    # If the user tried to access a protected resource,
     else:
-        targetURL = request.url
+        # Get the target url directly
+        url = request.url
     # Return
-    return dict(targetURL=targetURL)
+    return dict(url=url, REJECTION_LIMIT=REJECTION_LIMIT)
 
 
-@view_config(route_name='user_login', renderer='json', request_method='POST')
+@view_config(route_name='user_login',
+    renderer='json',
+    request_method='POST',
+    permission='__no_permission_required__')
 def login_(request):
     'Process login credentials'
+    # Define shortcuts
+    environ, params, registry = [getattr(request, x) for x in 'environ', 'params', 'registry']
     # Check username
-    username = str(request.POST.get('username', ''))
-    user = db.query(User).filter_by(username=username).first()
+    user = db.query(User).filter_by(username=params.get('username', '')).first()
     # If the username does not exist,
     if not user:
         return dict(isOk=0)
-    # Check password
-    password_hash = hash_string(str(request.POST.get('password', '')))
     # If the password is incorrect,
-    if password_hash != StringIO.StringIO(user.password_hash).read():
-        # Increase and return rejection_count without a requery
+    if user.password_hash != hash_string(params.get('password', '')):
+        # Increase and return rejection_count
         rejection_count = user.rejection_count = user.rejection_count + 1
-        db.commit()
+        transaction.commit()
         return dict(isOk=0, rejection_count=rejection_count)
     # If there have been too many rejections,
-    if user.rejection_count >= parameter.REJECTION_LIMIT:
+    if user.rejection_count >= REJECTION_LIMIT:
         # Expect recaptcha response
-        recaptchaChallenge = request.POST.get('recaptcha_challenge_field', '')
-        recaptchaResponse = request.POST.get('recaptcha_response_field', '')
-        recaptchaPrivateKey = config.get('recaptcha.private', '')
-        # Validate
-        result = captcha.submit(recaptchaChallenge, recaptchaResponse, recaptchaPrivateKey, h.getRemoteIP())
+        recaptchaChallenge = params.get('recaptcha_challenge_field', '')
+        recaptchaResponse = params.get('recaptcha_response_field', '')
+        recaptchaPrivate = registry.settings.get('recaptcha.private', '')
+        remoteIP = environ.get('HTTP_X_REAL_IP', environ.get('HTTP_X_FORWARDED_FOR', environ.get('REMOTE_ADDR')))
         # If the response is not valid,
-        if not result.is_valid:
+        if not captcha.submit(recaptchaChallenge, recaptchaResponse, recaptchaPrivate, remoteIP).is_valid:
             return dict(isOk=0, rejection_count=user.rejection_count)
+
+
+    if 'submitted' in params:
+        if user:
+            headers = remember(request, user.id, tokens=format_tokens(user))
+            return HTTPFound(location=targetURL, headers=headers)
+
+
     # Save user
     user.minutes_offset = h.getMinutesOffset()
     user.rejection_count = 0
@@ -146,8 +155,10 @@ def login_(request):
     return dict(isOk=1)
 
 
-@view_config(route_name='user_update', renderer='users/change.mako', request_method='GET')
-# set permsision to authe
+@view_config(route_name='user_update',
+    renderer='users/change.mak',
+    request_method='GET',
+    permission='protected')
 def update(request):
     'Show account update page'
     # Render
@@ -155,24 +166,26 @@ def update(request):
     c.isNew = False
     c.smsAddresses = user.sms_addresses
     # Return
-    return htmlfill.render(render('/people/change.mako'), {
+    return htmlfill.render(render('/people/change.mak'), {
         'username': user.username,
         'nickname': user.nickname,
         'email': user.email,
     })
 
 
-@view_config(route_name='user_update', renderer='json', request_method='POST')
-# set permsision to authe
+@view_config(route_name='user_update',
+    renderer='json',
+    request_method='POST',
+    permission='protected')
 def update_(request):
     'Update account'
     # Initialize
     userID = h.getUserID()
     # If the user is trying to update SMS information,
-    if 'smsAddressID' in request.POST:
+    if 'smsAddressID' in request.params:
         # Load
-        action = request.POST.get('action')
-        smsAddressID = request.POST['smsAddressID']
+        action = request.params.get('action')
+        smsAddressID = request.params['smsAddressID']
         smsAddress = db.query(SMSAddress).filter((SMSAddress.id==smsAddressID) & (SMSAddress.owner_id==userID)).first()
         if not smsAddress:
             return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
@@ -197,7 +210,8 @@ def update_(request):
         return save_user_(request, dict(request.params), 'update', db.query(User).get(userID))
 
 
-@view_config(route_name='user_logout')
+@view_config(route_name='user_logout', 
+    permission='__no_permission_required__')
 def logout(request):
     headers = forget(request)
     # return HTTPFound(location=request.route_url('index'), headers=headers)
@@ -210,10 +224,13 @@ def logout(request):
         del session['user.type']
         session.save()
     # Redirect
-    return redirect(request.GET.get('url', '/'))
+    return redirect(request.params.get('url', '/'))
 
 
-@view_config(route_name='user_reset', renderer='json', request_method='POST')
+@view_config(route_name='user_reset',
+    renderer='json',
+    request_method='POST',
+    permission='__no_permission_required__')
 def reset(request):
     'Reset password'
     # Get email

@@ -49,12 +49,17 @@ $('.dataTables_filter input').focus();
 	% for user in users:
 		<tr>
 			<td>${user.nickname}</td>
-			% if user.when_login:
 			<td>
-				<span title="${user.when_login.strftime('%Y%m%d%H%M%S')}"></span>
-				${user.when_login}
-			</td>
+			<%
+			when_login = user.when_login
+			%>
+			% if when_login:
+				<span title="${when_login.strftime('%Y%m%d%H%M%S')}"></span>
+				${when_login}
+			% else:
+				<span title=''></span>
 			% endif
+			</td>
 		</tr>
 	% endfor
 	</tbody>
