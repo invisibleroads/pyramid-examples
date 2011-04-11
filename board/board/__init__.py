@@ -16,7 +16,8 @@ def main(global_config, **settings):
         'Define template constants'
         return {'SITE_NAME': 'Board'}
     # Prepare configuration
-    config = Configurator(settings=settings, renderer_globals_factory=make_renderer_globals)
+    config = Configurator(settings=settings, 
+        renderer_globals_factory=make_renderer_globals)
     # Configure caching
     set_cache_regions_from_settings(settings)
     # Configure static assets

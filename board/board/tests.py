@@ -17,7 +17,7 @@ class TestViews(unittest.TestCase):
         self.config = testing.setUp()
         set_cache_regions_from_settings({
             'cache.type': 'memory',
-            'cache.regions': 'minute, hour',
+            'cache.regions': 'minute',
         })
 
     def tearDown(self):
@@ -26,19 +26,21 @@ class TestViews(unittest.TestCase):
     def test_index(self):
         from board.views import index
         # Make sure that index() returns as many posts as exist in the database
-        request = testing.DummyRequest()
-        info = index(request)
+        info = index(testing.DummyRequest())
         self.assertEqual(len(info['posts']), db.query(Post).count())
 
-    def test_add(self):
-        from board.views import add
-        # Make sure that add() does not add empty posts
+    def test_index_(self):
+        from board.views import index_
+        # Make sure that index_() does not add empty posts
         postCount = db.query(Post).count()
-        request = testing.DummyRequest(params={'text': u''}, post=True)
-        info = add(request)
+        info = index_(testing.DummyRequest(params={'text': u''}, post=True))
         self.assertEqual(len(info['posts']), postCount)
-        # Make sure that add() increments the number of posts
+        # Make sure that index_() increments the number of posts
         postCount = db.query(Post).count()
-        request = testing.DummyRequest(params={'text': u'four'}, post=True)
-        info = add(request)
+        info = index_(testing.DummyRequest(params={'text': u'four'}, post=True))
         self.assertEqual(len(info['posts']), postCount + 1)
+
+    def test_debug(self):
+        from board.views import debug
+        # Make sure that debug() raises an exception
+        self.assertRaises(Exception, debug, testing.DummyRequest())
