@@ -3,6 +3,7 @@
 # fix confirm and confirm_
 # fix datetime format for /users
 # fix whenIO to use pytz and display timezone
+# add salt to store in db
 'Pyramid WSGI configuration'
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
@@ -46,13 +47,12 @@ def main(global_config, **settings):
     # Prepare configuration
     authenticationPolicy = AuthTktAuthenticationPolicy(make_random_string(32), 
         callback=get_groups, http_only=True)
-    config = Configurator(
+    config = Configurator(settings=settings,
         authentication_policy=authenticationPolicy,
         authorization_policy=ACLAuthorizationPolicy(),
         default_permission='protected',
         renderer_globals_factory=make_renderer_globals,
-        root_factory='auth.RootFactory',
-        settings=settings)
+        root_factory='auth.RootFactory')
     # Configure sessions and caching
     settings['session.secret'] = make_random_string(32)
     config.set_session_factory(session_factory_from_settings(settings))
@@ -65,18 +65,9 @@ def main(global_config, **settings):
     config.scan(users)
     config.include(users.add_routes)
     # Configure routes
-    config.add_route('public', '', 
-        view='auth.views.public', 
-        view_renderer='page.mak', 
-        permission='__no_permission_required__')
-    config.add_route('protected', '/protected', 
-        view='auth.views.protected', 
-        view_renderer='page.mak',
-        permission='protected')
-    config.add_route('privileged', '/privileged', 
-        view='auth.views.privileged', 
-        view_renderer='page.mak',
-        permission='privileged')
+    config.add_route('public', '', view='auth.views.public', view_renderer='page.mak', permission='__no_permission_required__')
+    config.add_route('protected', '/protected', view='auth.views.protected', view_renderer='page.mak', permission='protected')
+    config.add_route('privileged', '/privileged', view='auth.views.privileged', view_renderer='page.mak', permission='privileged')
     # Return WSGI app
     return config.make_wsgi_app()
 

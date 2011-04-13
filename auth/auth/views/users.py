@@ -29,34 +29,25 @@ def add_routes(config):
     config.add_route('user_reset', 'users/reset')
 
 
-@view_config(route_name='user_index', 
-    renderer='users/index.mak', 
-    permission='__no_permission_required__')
+@view_config(route_name='user_index', renderer='users/index.mak', permission='__no_permission_required__')
 def index(request):
     'Show information about people registered in the database'
     return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
-@view_config(route_name='user_register', 
-    renderer='users/change.mak', 
-    request_method='GET',
-    permission='__no_permission_required__')
+@view_config(route_name='user_register', renderer='users/change.mak', request_method='GET', permission='__no_permission_required__')
 def register(request):
     'Show account registration page'
     return dict(isNew=True, username='', nickname=u'', email='')
 
 
-@view_config(route_name='user_register', 
-    renderer='json', 
-    request_method='POST',
-    permission='__no_permission_required__')
+@view_config(route_name='user_register', renderer='json', request_method='POST', permission='__no_permission_required__')
 def register_(request):
     'Store proposed changes and send confirmation email'
     return save_user_(request, dict(request.params), 'registration')
 
 
-@view_config(route_name='user_confirm', 
-    permission='__no_permission_required__')
+@view_config(route_name='user_confirm', permission='__no_permission_required__')
 def confirm(request):
     'Confirm changes'
     # Apply changes to user account
@@ -82,10 +73,7 @@ def confirm(request):
     return HTTPFound(location=request.route_url('user_login'))
 
 
-@view_config(route_name='user_login', 
-    renderer='users/login.mak', 
-    request_method='GET', 
-    permission='__no_permission_required__')
+@view_config(route_name='user_login', renderer='users/login.mak', request_method='GET', permission='__no_permission_required__')
 @view_config(
     renderer='users/login.mak', 
     context='pyramid.exceptions.Forbidden',
@@ -104,10 +92,7 @@ def login(request):
     return dict(url=url, REJECTION_LIMIT=REJECTION_LIMIT)
 
 
-@view_config(route_name='user_login',
-    renderer='json',
-    request_method='POST',
-    permission='__no_permission_required__')
+@view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')
 def login_(request):
     'Process login credentials'
     # Define shortcuts
@@ -129,36 +114,29 @@ def login_(request):
         recaptchaChallenge = params.get('recaptcha_challenge_field', '')
         recaptchaResponse = params.get('recaptcha_response_field', '')
         recaptchaPrivate = registry.settings.get('recaptcha.private', '')
-        remoteIP = environ.get('HTTP_X_REAL_IP', environ.get('HTTP_X_FORWARDED_FOR', environ.get('REMOTE_ADDR')))
+        remoteIP = environ.get('HTTP_X_REAL_IP', 
+                   environ.get('HTTP_X_FORWARDED_FOR', 
+                   environ.get('REMOTE_ADDR')))
         # If the response is not valid,
         if not captcha.submit(recaptchaChallenge, recaptchaResponse, recaptchaPrivate, remoteIP).is_valid:
             return dict(isOk=0, rejection_count=user.rejection_count)
-
-
-    if 'submitted' in params:
-        if user:
-            headers = remember(request, user.id, tokens=format_tokens(user))
-            return HTTPFound(location=targetURL, headers=headers)
-
-
     # Save user
-    user.minutes_offset = h.getMinutesOffset()
+    user.when_login = datetime.datetime.utcnow()
+    user.minutes_offset = get_minutes_offset()
     user.rejection_count = 0
-    db.commit()
+    transaction.commit()
     # Save session
-    session['user.minutes_offset'] = user.minutes_offset
+    session = request.session
     session['user.id'] = user.id
+    session['user.groups'] = user.groups
     session['user.nickname'] = user.nickname
-    session['user.type'] = user.type
+    session['user.minutes_offset'] = user.minutes_offset
     session.save()
     # Return
     return dict(isOk=1)
 
 
-@view_config(route_name='user_update',
-    renderer='users/change.mak',
-    request_method='GET',
-    permission='protected')
+@view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
 def update(request):
     'Show account update page'
     # Render
@@ -173,10 +151,7 @@ def update(request):
     })
 
 
-@view_config(route_name='user_update',
-    renderer='json',
-    request_method='POST',
-    permission='protected')
+@view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
 def update_(request):
     'Update account'
     # Initialize
@@ -210,8 +185,7 @@ def update_(request):
         return save_user_(request, dict(request.params), 'update', db.query(User).get(userID))
 
 
-@view_config(route_name='user_logout', 
-    permission='__no_permission_required__')
+@view_config(route_name='user_logout', permission='__no_permission_required__')
 def logout(request):
     headers = forget(request)
     # return HTTPFound(location=request.route_url('index'), headers=headers)
@@ -227,10 +201,7 @@ def logout(request):
     return redirect(request.params.get('url', '/'))
 
 
-@view_config(route_name='user_reset',
-    renderer='json',
-    request_method='POST',
-    permission='__no_permission_required__')
+@view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
 def reset(request):
     'Reset password'
     # Get email
@@ -378,3 +349,10 @@ def parse_tokens(tokens):
     'Parse unicode from token'
     nickname = base64.urlsafe_b64decode(tokens[0][1:].replace('+', '=')).decode('utf8')
     return nickname, tokens[1:]
+
+
+def get_minutes_offset(request):
+    try:
+        return int(request.params.get('minutes_offset', request.session.get('person.minutes_offset', MINUTES_OFFSET_DEFAULT)))
+    except ValueError:
+        return MINUTES_OFFSET_DEFAULT

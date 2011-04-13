@@ -45,7 +45,8 @@ class User(Base):
     def __repr__(self):
         return "<User('%s')>" % self.email
 
-    def get_groups(self):
+    @property
+    def groups(self):
         return ['super'] if self.is_super else []
 
 
