@@ -1,4 +1,3 @@
-## add CSRF
 <%inherit file='/base.mak'/>
 
 <%def name='title()'>Account ${'Registration' if isNew else 'Update'}</%def>
@@ -57,6 +56,7 @@ function save() {
     });
 }
 $('#save').click(save);
+% if not isNew:
 $('.updateSMSAddress').click(function() {
     var button = $(this), action = button.val().toLowerCase(), smsAddressID = getID(this), smsAddressRow = $('#smsAddress' + smsAddressID), smsAddressEmail = $('#smsAddressEmail' + smsAddressID);
     switch (action) {
@@ -94,6 +94,7 @@ $('.updateSMSAddress').click(function() {
         }
     });
 });
+% endif
 // Let ENTER key traverse and submit form
 $('#username').keydown(function(e) {if (e.keyCode == 13) $('#password').focus()});
 $('#password').keydown(function(e) {if (e.keyCode == 13) $('#nickname').focus()});
@@ -110,7 +111,7 @@ ${'Register for an account' if isNew else 'Update your account'}
 <table>
     <tr>
         <td><label for=username>Username</label></td>
-        <td><input id=username class=lockOnSave autocomplete=off value='${username | h}'></td>
+        <td><input id=username class=lockOnSave autocomplete=off value='${username}'></td>
         <td id=m_username class=message>What you use to login</td>
     </tr>
     <tr>
@@ -120,12 +121,12 @@ ${'Register for an account' if isNew else 'Update your account'}
     </tr>
     <tr>
         <td><label for=nickname>Nickname</label></td>
-        <td><input id=nickname class=lockOnSave autocomplete=off value='${nickname | h}'></td>
+        <td><input id=nickname class=lockOnSave autocomplete=off value='${nickname}'></td>
         <td id=m_nickname class=message>How others see you</td>
     </tr>
     <tr>
         <td><label for=email>Email</label></td>
-        <td><input id=email class=lockOnSave autocomplete=off value='${email | h}'></td>
+        <td><input id=email class=lockOnSave autocomplete=off value='${email}'></td>
         <td id=m_email class=message>To confirm changes to your account</td>
     </tr>
     <tr>
@@ -133,6 +134,7 @@ ${'Register for an account' if isNew else 'Update your account'}
         <td><input id=save class=lockOnSave type=button value="${'Register' if isNew else 'Update'}"></td>
         <td id=m_status class=message></td>
     </tr>
+<%doc>
 % if not isNew:
     <tr>
         <td>&nbsp;</td>
@@ -157,4 +159,5 @@ ${'Register for an account' if isNew else 'Update your account'}
     </tr>
 % endfor
 % endif
+</%doc>
 </table>

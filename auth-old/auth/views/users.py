@@ -74,10 +74,7 @@ def confirm(request):
 
 
 @view_config(route_name='user_login', renderer='users/login.mak', request_method='GET', permission='__no_permission_required__')
-@view_config(
-    renderer='users/login.mak', 
-    context='pyramid.exceptions.Forbidden',
-    permission='__no_permission_required__')
+@view_config(renderer='users/login.mak', context='pyramid.exceptions.Forbidden', permission='__no_permission_required__')
 def login(request):
     'Show login form'
     # If the user accessed the login page directly,
@@ -254,8 +251,8 @@ def save_user_(request, valueByName, action, user=None):
         body=render('users/confirm.mak', {
             'form': form,
             'ticket': ticket,
-            'TICKET_LIFESPAN_IN_HOURS': TICKET_LIFESPAN_IN_HOURS,
             'action': action,
+            'TICKET_LIFESPAN_IN_HOURS': TICKET_LIFESPAN_IN_HOURS,
         }, request)))
     transaction.commit()
     # Return
@@ -266,12 +263,13 @@ def apply_user_(ticket):
     'Finalize a change to a user account'
     # Load
     user_ = db.query(User_).filter(
-        (User_.ticket==ticket) & 
-        (User_.when_expired>=datetime.datetime.utcnow())).first()
+        (User_.ticket == ticket) & 
+        (User_.when_expired >= datetime.datetime.utcnow())).first()
     # If the ticket is valid,
     if user_:
         # Apply the change and reset rejection_count
         db.merge(User(
+            id=user_.user_id,
             username=user_.username,
             password_hash=user_.password_hash,
             nickname=user_.nickname,
@@ -356,3 +354,33 @@ def get_minutes_offset(request):
         return int(request.params.get('minutes_offset', request.session.get('person.minutes_offset', MINUTES_OFFSET_DEFAULT)))
     except ValueError:
         return MINUTES_OFFSET_DEFAULT
+
+
+
+class AuthenticationPolicy(object):
+    'A custom Pyramid authentication policy using Beaker'
+
+    def authenticated_userid(self, request):
+        'Return userID if authenticated'
+
+    def effective_principals(self, request):
+        'Return identifiers'
+
+    def remember(self, request, userID, **kw):
+        'Remember user'
+        # Prepare shortcut
+        session = request.session
+        # Save userID
+        session['user.id'] = userID
+        # Save keywords as user attributes
+        for key, value in kw.iteritems():
+            session['user.' + key] = value
+        # Save session
+        session.save()
+
+    def forget(self, request):
+        'Forget user'
+        # Prepare shortcut
+        # If the user is authenticated,
+        if 'user.id' in session:
+            # Delete keys from session
