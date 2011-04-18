@@ -1,0 +1,5 @@
+- Fix auth.models.initialize_sql
+- Make public, protected, privileged pages
+- Add tests for login and logout
+- Make login and logout
+- Consider using pyramid_tm

@@ -1,6 +1,7 @@
-CHANGES.txt
+CHANGES.rst
 MANIFEST.in
-README.txt
+README.rst
+TODO.rst
 development.ini
 production.ini
 setup.cfg

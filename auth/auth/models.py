@@ -1,42 +1,108 @@
+'Data models'
 import transaction
-
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import Unicode
-
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, Column, ForeignKey, Integer, String, LargeBinary, Unicode, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-
-from sqlalchemy.orm import scoped_session
-from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy.orm import scoped_session, sessionmaker, relationship, column_property
+from sqlalchemy.orm.properties import ColumnProperty
 from zope.sqlalchemy import ZopeTransactionExtension
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+from auth.libraries.tools import hash_string, make_random_string
+from auth.parameters import *
+
+
+db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
-class MyModel(Base):
-    __tablename__ = 'models'
+
+class CaseInsensitiveComparator(ColumnProperty.Comparator):
+    'A case-insensitive SQLAlchemy comparator for unicode or string columns'
+
+    def __eq__(self, other):
+        'Return True if the lowercase of both columns are equal'
+        return func.lower(self.__clause_element__()) == func.lower(other)
+
+
+class User(Base):
+    'A user'
+    __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    name = Column(Unicode(255), unique=True)
-    value = Column(Integer)
+    username = column_property(
+        Column(String(USERNAME_LEN_MAX), unique=True), 
+        comparator_factory=CaseInsensitiveComparator)
+    password_hash = Column(LargeBinary(32))
+    nickname = column_property(
+        Column(Unicode(NICKNAME_LEN_MAX), unique=True),
+        comparator_factory=CaseInsensitiveComparator)
+    email = column_property(
+        Column(String(EMAIL_LEN_MAX), unique=True), 
+        comparator_factory=CaseInsensitiveComparator)
+    is_super = Column(Boolean, default=False)
+    minutes_offset = Column(Integer, default=0)
+    rejection_count = Column(Integer, default=0)
+    sms_addresses = relationship('SMSAddress')
+    when_login = Column(DateTime)
 
-    def __init__(self, name, value):
-        self.name = name
-        self.value = value
+    def __repr__(self):
+        return "<User('%s')>" % self.email
 
-def populate():
-    session = DBSession()
-    model = MyModel(name=u'root', value=55)
-    session.add(model)
-    session.flush()
-    transaction.commit()
-    
+    @property
+    def groups(self):
+        return ['super'] if self.is_super else []
+
+
+class User_(Base):
+    'An unconfirmed change to a user account'
+    __tablename__ = 'users_'
+    id = Column(Integer, primary_key=True)
+    username = column_property(
+        Column(String(USERNAME_LEN_MAX)), 
+        comparator_factory=CaseInsensitiveComparator)
+    password_hash = Column(LargeBinary(32))
+    nickname = column_property(
+        Column(Unicode(NICKNAME_LEN_MAX)), 
+        comparator_factory=CaseInsensitiveComparator)
+    email = column_property(
+        Column(String(EMAIL_LEN_MAX)), 
+        comparator_factory=CaseInsensitiveComparator)
+    user_id = Column(ForeignKey('users.id'))
+    ticket = Column(String(TICKET_LEN), unique=True)
+    when_expired = Column(DateTime)
+
+    def __repr__(self):
+        return "<User_('%s')>" % self.email
+
+
+class SMSAddress(Base):
+    'An SMS address'
+    __tablename__ = 'sms_addresses'
+    id = Column(Integer, primary_key=True)
+    email = column_property(
+        Column(String(EMAIL_LEN_MAX), unique=True), 
+        comparator_factory=CaseInsensitiveComparator)
+    user_id = Column(ForeignKey('users.id'))
+    is_active = Column(Boolean, default=False)
+
+    def __repr__(self):
+        return "<SMSAddress('%s')>" % self.email
+
+
 def initialize_sql(engine):
-    DBSession.configure(bind=engine)
+    'Create tables and insert data'
+    # Create tables
+    db.configure(bind=engine)
     Base.metadata.bind = engine
     Base.metadata.create_all(engine)
-    try:
-        populate()
-    except IntegrityError:
-        DBSession.rollback()
+    # If the tables are empty,
+    if not db.query(User).count():
+        # Prepare data
+        userPacks = [
+            ('user', make_random_string(PASSWORD_LEN), u'User', 'user@example.com', False), 
+            ('admin', make_random_string(PASSWORD_LEN), u'Admin', 'admin@example.com', True),
+        ]
+        # Insert data
+        userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'
+        for username, password, nickname, email, is_super in userPacks:
+            print userTemplate.format(username, password, nickname, email)
+            db.add(User(username=username, password_hash=hash_string(password), nickname=nickname, email=email, is_super=is_super))
+        print
+        transaction.commit()
