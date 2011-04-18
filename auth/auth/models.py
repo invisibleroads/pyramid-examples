@@ -106,3 +106,5 @@ def initialize_sql(engine):
             db.add(User(username=username, password_hash=hash_string(password), nickname=nickname, email=email, is_super=is_super))
         print
         transaction.commit()
+    # Return
+    return db

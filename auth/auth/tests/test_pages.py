@@ -9,9 +9,10 @@ from auth.models import initialize_sql
 
 class TestPageAccess(unittest.TestCase):
 
+    db = initialize_sql(create_engine('sqlite://'))
+
     def setUp(self):
         self.config = testing.setUp()
-        initialize_sql(create_engine('sqlite://'))
 
     def tearDown(self):
         testing.tearDown()
