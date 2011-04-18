@@ -96,19 +96,8 @@ def initialize_sql(engine):
     if not db.query(User).first():
         # Prepare data
         userPacks = [
-            (
-                'user', 
-                make_random_string(PASSWORD_LENGTH), 
-                u'User', 
-                'user@example.com', 
-                False,
-            ), (
-                'administrator', 
-                make_random_string(PASSWORD_LENGTH), 
-                u'Administrator', 
-                'administrator@example.com', 
-                True,
-            ),
+            ('user', make_random_string(PASSWORD_LENGTH), u'User', 'user@example.com', False), 
+            ('admin', make_random_string(PASSWORD_LENGTH), u'Admin', 'admin@example.com', True),
         ]
         # Insert data
         userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'

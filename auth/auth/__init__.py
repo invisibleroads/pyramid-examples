@@ -20,6 +20,8 @@ from auth.parameters import SITE_NAME, SITE_VERSION
 
 def main(global_config, **settings):
     'Return a Pyramid WSGI application'
+    print global_config
+    print settings
     # Connect to database
     initialize_sql(engine_from_config(settings, 'sqlalchemy.'))
     # Define methods
