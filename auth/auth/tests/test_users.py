@@ -12,7 +12,8 @@ class TestUsers(TestTemplate):
     def test_login(self):
         'Make sure that login works'
         url = self.get_url('user_login')
-        url_ = self.get_url('user_update')
+        # url_ = self.get_url('user_update')
+        url_ = '/protected'
         # Going to a protected page displays the login page
         self.assert_('value=Login' in self.app.get(url_).body)
         # Going directly to the login page stores the target url
@@ -27,7 +28,8 @@ class TestUsers(TestTemplate):
     def test_logout(self):
         'Make sure that logout works'
         url = self.get_url('user_logout')
-        url_ = self.get_url('user_index')
+        # url_ = self.get_url('user_index')
+        url_ = '/'
         # Logging out redirects whether the user is authenticated or not
         self.assertEqual(url_, self.app.get(url, dict(url=url_)).location)
         self.login(self.userN)

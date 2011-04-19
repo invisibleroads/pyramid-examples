@@ -42,6 +42,5 @@ class TestTemplate(unittest.TestCase):
     def assertJSON(self, response, isOk):
         'Assert response JSON'
         responseData = simplejson.loads(response.body)
-        print responseData
         self.assertEqual(responseData['isOk'], isOk)
         return responseData

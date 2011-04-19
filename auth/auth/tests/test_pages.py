@@ -1,6 +1,4 @@
 'Page access tests'
-from pyramid.exceptions import Forbidden
-
 from auth.tests import TestTemplate
 
 
@@ -16,7 +14,7 @@ class TestPageAccess(TestTemplate):
         'Make sure the protected page is visible only after authentication'
         url = self.get_url('page_protected')
         # Make sure the view is not visible to the public
-        self.assertRaises(Forbidden, self.app.get, url)
+        self.assert_('value=Login' in self.app.get(url).body)
         # Make sure the view is visible to normal users
         self.login(self.userN)
         self.app.get(url)
@@ -25,10 +23,10 @@ class TestPageAccess(TestTemplate):
         'Make sure the protected page is visible only to super users'
         url = self.get_url('page_privileged')
         # Make sure the view is not visible to the public
-        self.assertRaises(Forbidden, self.app.get, url)
+        self.assert_('value=Login' in self.app.get(url).body)
         # Make sure the view is not visible to normal users
         self.login(self.userN)
-        self.assertRaises(Forbidden, self.app.get, url)
+        self.assert_('value=Login' in self.app.get(url).body)
         # Make sure the view is visible to super users
         self.login(self.userS)
         self.app.get(url)

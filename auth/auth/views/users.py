@@ -27,6 +27,22 @@ def index(request):
     return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
+@view_config(route_name='user_login', renderer='users/login.mak', request_method='GET', permission='__no_permission_required__')
+@view_config(renderer='users/login.mak', context='pyramid.exceptions.Forbidden', permission='__no_permission_required__')
+def login(request):
+    'Show login form'
+    # If the user accessed the login page directly,
+    if request.path == request.route_path('user_login'):
+        # Get the target url from the query string
+        url = request.params.get('url', '/')
+    # If the user tried to access a protected resource,
+    else:
+        # Get the target url directly
+        url = request.url
+    # Return
+    return dict(url=url, REJECTION_LIMIT=REJECTION_LIMIT)
+
+
 @view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')
 def login_(request):
     'Process login credentials'

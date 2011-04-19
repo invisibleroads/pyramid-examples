@@ -2,8 +2,8 @@
 ---
 
 - Made data models
-- Made public, protected, privileged views
-- Made login and logout views
-- Made functional tests for page_public, page_protected, page_privileged
-- Made functional tests for user_login and user_logout
-- Made user_index
+- Made pages.public, pages.protected, pages.privileged
+- Made users.login_, users.logout
+- Made functional tests for pages.public, pages.protected, pages.privileged
+- Made functional tests for users.login, users.login_, users.logout
+- Made users.index
