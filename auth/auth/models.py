@@ -37,10 +37,10 @@ class User(Base):
         Column(String(EMAIL_LEN_MAX), unique=True), 
         comparator_factory=CaseInsensitiveComparator)
     is_super = Column(Boolean, default=False)
-    minutes_offset = Column(Integer, default=0)
     rejection_count = Column(Integer, default=0)
-    sms_addresses = relationship('SMSAddress')
+    offset = Column(Integer, default=0)
     when_login = Column(DateTime)
+    sms_addresses = relationship('SMSAddress')
 
     def __repr__(self):
         return "<User('%s')>" % self.email

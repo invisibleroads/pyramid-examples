@@ -8,14 +8,17 @@ README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 requires = [
+    'formencode',
     'pyramid',
+    'pyramid_beaker',
+    'pyramid_mailer',
     'pyramid_tm',
     'SQLAlchemy',
+    'recaptcha-client',
     'transaction',
-    'repoze.tm2>=1.0b1', # default_commit_veto
-    'zope.sqlalchemy',
     'WebError',
     'webtest',
+    'zope.sqlalchemy',
 ]
 
 if sys.version_info[:3] < (2,5,0):

@@ -1,5 +1,4 @@
 - Add functional tests for login and logout
 - Add functional tests for public, protected, privileged pages
-- Make login and logout
-- try sending mail without pyramid_tm to see if it is still sent on abort
+- Try sending mail without pyramid_tm to see if it is still sent on abort
 - Add pyramid_tm

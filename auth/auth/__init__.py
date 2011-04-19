@@ -9,7 +9,7 @@ import os
 
 from auth.libraries.tools import make_random_string
 from auth.models import initialize_sql
-from auth.views import pages
+from auth.views import pages, users
 from auth.parameters import *
 
 
@@ -28,16 +28,17 @@ def main(global_config, **settings):
         identity = authenticationPolicy.cookie.identify(system['request'])
         if identity:
             userID = identity['userid']
-            userNickname, userGroups = parse_tokens(identity['tokens'])
+            nickname, offset, groups = users.parse_tokens(identity['tokens'])
         else:
             userID = None
-            userNickname, userGroups = u'', []
+            nickname, offset, groups = u'', MINUTES_OFFSET, []
         return dict(
             SITE_NAME=SITE_NAME, 
             SITE_VERSION=SITE_VERSION,
             USER_ID=userID,
-            USER_NICKNAME=userNickname,
-            USER_GROUPS=userGroups)
+            USER_NICKNAME=nickname,
+            USER_OFFSET=offset,
+            USER_GROUPS=groups)
     # Load sensitive configuration
     if '__file__' in global_config:
         configFolder, configName = os.path.split(global_config['__file__'])
@@ -47,7 +48,8 @@ def main(global_config, **settings):
     # Prepare configuration
     if 'authtkt.secret' not in settings:
         settings['authtkt.secret'] = make_random_string(SECRET_LEN)
-    authenticationPolicy = AuthTktAuthenticationPolicy(settings['authtkt.secret'], callback=get_groups, http_only=True)
+    authenticationPolicy = AuthTktAuthenticationPolicy(settings['authtkt.secret'], 
+        callback=get_groups, http_only=True)
     config = Configurator(
         settings=settings,
         authentication_policy=authenticationPolicy,

@@ -9,15 +9,6 @@ README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 requires = [
-    'pyramid',
-    'pyramid_beaker',
-    'pyramid_mailer',
-    'SQLAlchemy',
-    'transaction',
-    'zope.sqlalchemy',
-    'WebError',
-    'formencode',
-    'recaptcha-client',
 ]
 if sys.version_info[:3] < (2,5,0):
     requires.append('pysqlite')

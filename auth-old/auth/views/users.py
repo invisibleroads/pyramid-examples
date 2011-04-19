@@ -1,21 +1,9 @@
-'Views for user account management'
-from pyramid.httpexceptions import HTTPFound
-from pyramid.security import remember, forget
-from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid_mailer import get_mailer
 from pyramid_mailer.message import Message
-from recaptcha.client import captcha
 from formencode import validators, Schema, All, Invalid
 from sqlalchemy.orm import joinedload
 from email.utils import formataddr
-import transaction
-import base64
-import datetime
-
-from auth.models import db, User, User_
-from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
-from auth.parameters import *
 
 
 def add_routes(config):
@@ -181,22 +169,6 @@ def update_(request):
         return save_user_(request, dict(request.params), 'update', db.query(User).get(userID))
 
 
-@view_config(route_name='user_logout', permission='__no_permission_required__')
-def logout(request):
-    headers = forget(request)
-    # return HTTPFound(location=request.route_url('index'), headers=headers)
-    'Logout'
-    # If the user is logged in,
-    if h.isUser():
-        del session['user.minutes_offset']
-        del session['user.id']
-        del session['user.nickname']
-        del session['user.type']
-        session.save()
-    # Redirect
-    return redirect(request.params.get('url', '/'))
-
-
 @view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
 def reset(request):
     'Reset password'
@@ -348,11 +320,6 @@ def parse_tokens(tokens):
     return nickname, tokens[1:]
 
 
-def get_minutes_offset(request):
-    try:
-        return int(request.params.get('minutes_offset', request.session.get('person.minutes_offset', MINUTES_OFFSET_DEFAULT)))
-    except ValueError:
-        return MINUTES_OFFSET_DEFAULT
 
 
 

@@ -49,8 +49,8 @@ function login() {
     }
     // Get recaptcha
     if ($('#recaptcha_challenge_field').length) {
-        loginData['recaptcha_challenge_field'] = $('#recaptcha_challenge_field').val();
-        loginData['recaptcha_response_field'] = $('#recaptcha_response_field').val();
+        loginData['recaptchaChallenge'] = $('#recaptcha_challenge_field').val();
+        loginData['recaptchaResponse'] = $('#recaptcha_response_field').val();
     }
     // Attempt login
     $.post("${request.route_url('user_login')}", loginData, function(data) {

@@ -3,7 +3,6 @@ import unittest
 import webtest
 from pyramid.exceptions import Forbidden
 
-
 from auth import main
 
 
