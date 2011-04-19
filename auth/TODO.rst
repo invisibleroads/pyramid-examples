@@ -1,5 +1,3 @@
-- Make public, protected, privileged pages
-- Run tests
 - Add pyramid_tm
 - Add tests for login and logout
 - Make login and logout
