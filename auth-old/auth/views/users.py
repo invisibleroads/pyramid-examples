@@ -19,7 +19,6 @@ from auth.parameters import *
 
 
 def add_routes(config):
-    'Add routes'
     config.add_route('user_index', 'users')
     config.add_route('user_register', 'users/register')
     config.add_route('user_confirm', 'users/confirm/{ticket}')

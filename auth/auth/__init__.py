@@ -54,6 +54,8 @@ def main(global_config, **settings):
         default_permission='protected',
         renderer_globals_factory=make_renderer_globals,
         root_factory='auth.RootFactory')
+    # Configure transaction manager
+    config.include('pyramid_tm')
     # Configure static assets
     config.add_static_view('static', 'auth:static')
     # Configure routes that demonstrate access control

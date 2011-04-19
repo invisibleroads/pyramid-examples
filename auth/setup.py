@@ -9,6 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 requires = [
     'pyramid',
+    'pyramid_tm',
     'SQLAlchemy',
     'transaction',
     'repoze.tm2>=1.0b1', # default_commit_veto
