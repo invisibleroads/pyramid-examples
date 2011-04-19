@@ -15,6 +15,7 @@ requires = [
     'pyramid_tm',
     'SQLAlchemy',
     'recaptcha-client',
+    'simplejson',
     'transaction',
     'WebError',
     'webtest',

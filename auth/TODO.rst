@@ -1,4 +1,1 @@
-- Add functional tests for public, protected, privileged pages
-- Add functional tests for login and logout
-- Try sending mail without pyramid_tm to see if it is still sent on abort
-- Add pyramid_tm
+- Fix user_index so that user.when_login displays timezone

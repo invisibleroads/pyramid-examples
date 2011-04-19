@@ -12,8 +12,19 @@ from auth.parameters import *
 
 
 def includeme(config):
+    config.add_route('user_index', 'users')
+    config.add_route('user_register', 'users/register')
+    config.add_route('user_confirm', 'users/confirm/{ticket}')
     config.add_route('user_login', 'users/login')
     config.add_route('user_logout', 'users/logout')
+    config.add_route('user_update', 'users/update')
+    config.add_route('user_reset', 'users/reset')
+
+
+@view_config(route_name='user_index', renderer='users/index.mak', permission='__no_permission_required__')
+def index(request):
+    'Show information about people registered in the database'
+    return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
 @view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')

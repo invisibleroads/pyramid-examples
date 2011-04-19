@@ -10,9 +10,7 @@ def add_routes(config):
     config.add_route('user_index', 'users')
     config.add_route('user_register', 'users/register')
     config.add_route('user_confirm', 'users/confirm/{ticket}')
-    config.add_route('user_login', 'users/login')
     config.add_route('user_update', 'users/update')
-    config.add_route('user_logout', 'users/logout')
     config.add_route('user_reset', 'users/reset')
 
 
@@ -74,50 +72,6 @@ def login(request):
         url = request.url
     # Return
     return dict(url=url, REJECTION_LIMIT=REJECTION_LIMIT)
-
-
-@view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')
-def login_(request):
-    'Process login credentials'
-    # Define shortcuts
-    environ, params, registry = [getattr(request, x) for x in 'environ', 'params', 'registry']
-    # Check username
-    user = db.query(User).filter_by(username=params.get('username', '')).first()
-    # If the username does not exist,
-    if not user:
-        return dict(isOk=0)
-    # If the password is incorrect,
-    if user.password_hash != hash_string(params.get('password', '')):
-        # Increase and return rejection_count
-        rejection_count = user.rejection_count = user.rejection_count + 1
-        transaction.commit()
-        return dict(isOk=0, rejection_count=rejection_count)
-    # If there have been too many rejections,
-    if user.rejection_count >= REJECTION_LIMIT:
-        # Expect recaptcha response
-        recaptchaChallenge = params.get('recaptcha_challenge_field', '')
-        recaptchaResponse = params.get('recaptcha_response_field', '')
-        recaptchaPrivate = registry.settings.get('recaptcha.private', '')
-        remoteIP = environ.get('HTTP_X_REAL_IP', 
-                   environ.get('HTTP_X_FORWARDED_FOR', 
-                   environ.get('REMOTE_ADDR')))
-        # If the response is not valid,
-        if not captcha.submit(recaptchaChallenge, recaptchaResponse, recaptchaPrivate, remoteIP).is_valid:
-            return dict(isOk=0, rejection_count=user.rejection_count)
-    # Save user
-    user.when_login = datetime.datetime.utcnow()
-    user.minutes_offset = get_minutes_offset()
-    user.rejection_count = 0
-    transaction.commit()
-    # Save session
-    session = request.session
-    session['user.id'] = user.id
-    session['user.groups'] = user.groups
-    session['user.nickname'] = user.nickname
-    session['user.minutes_offset'] = user.minutes_offset
-    session.save()
-    # Return
-    return dict(isOk=1)
 
 
 @view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
@@ -307,46 +261,3 @@ class UserForm(Schema):
             not_empty=True, 
             strip=True),
         Unique('email', 'That email is reserved for another account'))
-
-
-def format_tokens(user):
-    'Format unicode into token'
-    return ['x' + base64.urlsafe_b64encode(user.nickname.encode('utf8')).replace('=', '+')] + user.get_groups()
-
-
-def parse_tokens(tokens):
-    'Parse unicode from token'
-    nickname = base64.urlsafe_b64decode(tokens[0][1:].replace('+', '=')).decode('utf8')
-    return nickname, tokens[1:]
-
-
-
-
-
-class AuthenticationPolicy(object):
-    'A custom Pyramid authentication policy using Beaker'
-
-    def authenticated_userid(self, request):
-        'Return userID if authenticated'
-
-    def effective_principals(self, request):
-        'Return identifiers'
-
-    def remember(self, request, userID, **kw):
-        'Remember user'
-        # Prepare shortcut
-        session = request.session
-        # Save userID
-        session['user.id'] = userID
-        # Save keywords as user attributes
-        for key, value in kw.iteritems():
-            session['user.' + key] = value
-        # Save session
-        session.save()
-
-    def forget(self, request):
-        'Forget user'
-        # Prepare shortcut
-        # If the user is authenticated,
-        if 'user.id' in session:
-            # Delete keys from session

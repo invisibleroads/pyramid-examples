@@ -16,10 +16,10 @@
 	path = request.path
 	linkPacks = [
 		('Home', '/'),
-		# ('Users', request.route_path('user_index')),
+		('Users', request.route_path('user_index')),
 	]
-	## if USER_ID:
-		## linkPacks.append((USER_NICKNAME, request.route_path('user_update')))
+	if USER_ID:
+		linkPacks.append((USER_NICKNAME, request.route_path('user_update')))
 	%>
 % for linkName, linkPath in linkPacks:
 	&nbsp;
@@ -29,14 +29,14 @@
 		<b>${linkName}</b>
 	% endif
 % endfor
-	## &nbsp;
-	## % if USER_ID:
-		## <a href="${request.route_path('user_logout', path=request.path)}" class='hover link off'>Logout</a>
-	## % elif path != request.route_path('user_login') and request.exception.__class__.__name__ != 'Forbidden':
-		## <a href="${request.route_path('user_login', path=request.path)}" class='hover link off'>Login</a>
-	## % else:
-		## <b>Login</b>
-	## % endif
+	&nbsp;
+	% if USER_ID:
+		<a href="${request.route_path('user_logout', path=request.path)}" class='hover link off'>Logout</a>
+	% elif path != request.route_path('user_login') and request.exception.__class__.__name__ != 'Forbidden':
+		<a href="${request.route_path('user_login', path=request.path)}" class='hover link off'>Login</a>
+	% else:
+		<b>Login</b>
+	% endif
 	</div>
 </div>
 <div id=main>

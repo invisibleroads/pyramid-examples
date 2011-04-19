@@ -100,9 +100,9 @@ def initialize_sql(engine):
             ('admin', make_random_string(PASSWORD_LEN), u'Admin', 'admin@example.com', True),
         ]
         # Insert data
-        userTemplate = '\nUsername\t{}\nPassword\t{}\nNickname\t{}\nEmail\t\t{}'
+        userTemplate = '\nUsername\t%s\nPassword\t%s\nNickname\t%s\nEmail\t\t%s'
         for username, password, nickname, email, is_super in userPacks:
-            print userTemplate.format(username, password, nickname, email)
+            print userTemplate % (username, password, nickname, email)
             db.add(User(username=username, password_hash=hash_string(password), nickname=nickname, email=email, is_super=is_super))
         print
         transaction.commit()
