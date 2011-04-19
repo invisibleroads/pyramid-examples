@@ -39,10 +39,11 @@ def main(global_config, **settings):
             USER_NICKNAME=userNickname,
             USER_GROUPS=userGroups)
     # Load sensitive configuration
-    configFolder, configName = os.path.split(global_config['__file__'])
-    configParser = ConfigParser(global_config)
-    if configParser.read(os.path.join(configFolder, '.' + configName)):
-        settings.update(configParser.items('app:auth'))
+    if '__file__' in global_config:
+        configFolder, configName = os.path.split(global_config['__file__'])
+        configParser = ConfigParser(global_config)
+        if configParser.read(os.path.join(configFolder, '.' + configName)):
+            settings.update(configParser.items('app:auth'))
     # Prepare configuration
     if 'authtkt.secret' not in settings:
         settings['authtkt.secret'] = make_random_string(SECRET_LEN)
@@ -54,6 +55,10 @@ def main(global_config, **settings):
         default_permission='protected',
         renderer_globals_factory=make_renderer_globals,
         root_factory='auth.RootFactory')
+    config.add_settings({
+        'mako.directories': 'auth:templates',
+        'mako.default_filters': 'h',
+    })
     # Configure transaction manager
     config.include('pyramid_tm')
     # Configure static assets
