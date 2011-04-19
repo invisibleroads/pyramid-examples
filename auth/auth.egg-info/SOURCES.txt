@@ -25,6 +25,7 @@ auth/static/style.css
 auth/templates/base.mak
 auth/templates/page.mak
 auth/tests/__init__.py
+auth/tests/test_pages.py
 auth/views/__init__.py
 auth/views/pages.py
 auth/views/users.py

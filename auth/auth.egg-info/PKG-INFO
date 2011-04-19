@@ -18,6 +18,7 @@ Description: auth README
         - Made tests for public, protected, privileged pages
         - Made data models
         - Made public, protected, privileged pages
+        - Made login and logout views
         
 Keywords: web wsgi bfg pylons pyramid
 Platform: UNKNOWN

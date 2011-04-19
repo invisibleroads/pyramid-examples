@@ -6,7 +6,7 @@ import transaction
 from board.models import db, Post
 
 
-def add_routes(config):
+def includeme(config):
     'Add routes'
     config.add_route('index', '')
     config.add_route('debug', 'debug')

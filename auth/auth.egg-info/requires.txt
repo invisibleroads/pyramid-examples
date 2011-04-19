@@ -1,8 +1,11 @@
+formencode
 pyramid
+pyramid_beaker
+pyramid_mailer
 pyramid_tm
 SQLAlchemy
+recaptcha-client
 transaction
-repoze.tm2>=1.0b1
-zope.sqlalchemy
 WebError
 webtest
+zope.sqlalchemy

@@ -11,7 +11,7 @@ from auth.libraries.tools import hash_string, make_random_string, make_random_un
 from auth.parameters import *
 
 
-def add_routes(config):
+def includeme(config):
     config.add_route('user_login', 'users/login')
     config.add_route('user_logout', 'users/logout')
 
@@ -50,7 +50,7 @@ def login_(request):
     # Set headers to set cookie
     if not hasattr(request, 'response_headerlist'):
         request.response_headerlist = []
-    request.response_headerlist.extend(remember(request, user.id, token=format_tokens(user)))
+    request.response_headerlist.extend(remember(request, user.id, tokens=format_tokens(user)))
     # Return
     return dict(isOk=1)
 
@@ -65,7 +65,7 @@ def format_tokens(user):
     'Format user information into a cookie'
     nickname = 'x' + base64.urlsafe_b64encode(user.nickname.encode('utf8')).replace('=', '+')
     offset = 'x' + str(user.offset)
-    groups = user.get_groups()
+    groups = user.groups
     return [nickname, offset] + groups
 
 

@@ -2,7 +2,7 @@
 from pyramid.view import view_config
 
 
-def add_routes(config):
+def includeme(config):
     config.add_route('page_public', '')
     config.add_route('page_protected', '/protected')
     config.add_route('page_privileged', '/privileged')
