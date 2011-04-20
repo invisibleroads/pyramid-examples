@@ -7,3 +7,5 @@
 - Made functional tests for pages.public, pages.protected, pages.privileged
 - Made functional tests for users.login, users.login_, users.logout
 - Made users.index
+- Made users.register, users.register_
+- Made users.confirm

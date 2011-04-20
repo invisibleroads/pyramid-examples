@@ -1,5 +1,3 @@
-- Add users.register, users.register_
-- Add users.confirm
 - Add users.update, users.update_
 - Add users.reset
 - Fix user_index so that user.when_login displays timezone
