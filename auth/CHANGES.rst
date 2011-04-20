@@ -9,3 +9,6 @@
 - Made users.index
 - Made users.register, users.register_
 - Made users.confirm
+- Made users.update, users.update_
+- Made users.reset
+- Added hashlib.secret

@@ -4,11 +4,12 @@ import random
 
 
 alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+secret = ''
 
 
 def hash_string(string): 
     'Compute the hash of the string'
-    return hashlib.sha256(string).digest()
+    return hashlib.sha256(string + secret).digest()
 
 
 def make_random_string(length):
