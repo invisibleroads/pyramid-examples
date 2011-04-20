@@ -1,15 +1,16 @@
 'Views for user account management'
 import base64
 import datetime
-from email.utils import formataddr
 from pyramid.view import view_config
-from pyramid.security import remember, forget
+from pyramid.security import remember, forget, authenticated_userid
 from pyramid.httpexceptions import HTTPFound
 from pyramid.renderers import render
 from pyramid_mailer import get_mailer
 from pyramid_mailer.message import Message
-from recaptcha.client import captcha
+from email.utils import formataddr
 from formencode import validators, Schema, All, Invalid
+from recaptcha.client import captcha
+from sqlalchemy.orm import joinedload
 
 from auth.models import db, User, User_
 from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
@@ -128,6 +129,58 @@ def login_(request):
 def logout(request):
     'Logout'
     return HTTPFound(location=request.params.get('url', '/'), headers=forget(request))
+
+
+@view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
+def update(request):
+    'Show account update page'
+    userID = authenticated_userid(request)
+    user = db.query(User).options(joinedload(User.sms_addresses)).get(userID)
+    return dict(isNew=False, username=user.username, nickname=user.nickname, email=user.email)
+
+
+@view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
+def update_(request):
+    'Update account'
+    userID = authenticated_userid(request)
+    params = request.params
+    # If the user is trying to update SMS information,
+    # if 'smsAddressID' in params:
+        # action = params.get('action')
+        # smsAddressID = params['smsAddressID']
+        # smsAddress = db.query(SMSAddress).filter(
+            # (SMSAddress.id == smsAddressID) & 
+            # (SMSAddress.owner_id==userID)).first()
+        # if not smsAddress:
+            # return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
+        # elif 'activate' in action:
+            # smsAddress.is_active = 'activate' == action
+        # elif 'remove' == action:
+            # db.delete(smsAddress)
+        # else:
+            # return dict(isOk=0, message='Command not recognized')
+        # Return
+        # return dict(isOk=1)
+    # If the user is trying to update account information, send confirmation email
+    return save_user_(request, dict(params), 'update', db.query(User).get(userID))
+
+
+@view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
+def reset(request):
+    'Reset password'
+    # Get email
+    email = request.params.get('email')
+    # Try to load the user
+    user = db.query(User).filter(User.email==email).first()
+    # If the email is not in our database,
+    if not user: 
+        return dict(isOk=0)
+    # Reset account
+    return save_user_(request, dict(
+        username=user.username, 
+        password=make_random_string(PASSWORD_LEN),
+        nickname=user.nickname,
+        email=user.email), 'reset', user)
 
 
 def format_tokens(user):

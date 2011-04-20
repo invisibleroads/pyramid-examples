@@ -1,9 +1,0 @@
-pyramid
-pyramid_beaker
-pyramid_mailer
-SQLAlchemy
-transaction
-zope.sqlalchemy
-WebError
-formencode
-recaptcha-client

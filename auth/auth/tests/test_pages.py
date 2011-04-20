@@ -25,7 +25,6 @@ class TestPageAccess(TestTemplate):
         # Make sure the view is not visible to the public
         self.assert_('value=Login' in self.app.get(url).body)
         # Make sure the view is not visible to normal users
-        self.login(self.userN)
         self.assert_('value=Login' in self.app.get(url).body)
         # Make sure the view is visible to super users
         self.login(self.userS)

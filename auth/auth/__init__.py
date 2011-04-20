@@ -87,7 +87,7 @@ class RootFactory(object):
     'Permission definitions'
     __acl__ = [ 
         (Allow, Authenticated, 'protected'),
-        (Allow, 'super', 'privileged'),
+        (Allow, 'x', 'privileged'),
     ]
 
     def __init__(self, request):

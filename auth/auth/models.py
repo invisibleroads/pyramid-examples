@@ -47,7 +47,7 @@ class User(Base):
 
     @property
     def groups(self):
-        return ['super'] if self.is_super else []
+        return ['x'] if self.is_super else []
 
 
 class User_(Base):
@@ -96,8 +96,8 @@ def initialize_sql(engine):
     if not db.query(User).count():
         # Prepare data
         userPacks = [
-            ('user', make_random_string(PASSWORD_LEN), u'User', 'user@example.com', False), 
             ('admin', make_random_string(PASSWORD_LEN), u'Admin', 'admin@example.com', True),
+            ('user', make_random_string(PASSWORD_LEN), u'User', 'user@example.com', False), 
         ]
         # Insert data
         userTemplate = '\nUsername\t%s\nPassword\t%s\nNickname\t%s\nEmail\t\t%s'
