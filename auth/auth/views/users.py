@@ -142,8 +142,10 @@ def update(request):
 @view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
 def update_(request):
     'Update account'
-    userID = authenticated_userid(request)
     params = request.params
+    if params.get('token') != request.session.get_csrf_token():
+        return dict(isOk=0, message='Invalid token')
+    userID = authenticated_userid(request)
     # If the user is trying to update SMS information,
     # if 'smsAddressID' in params:
         # action = params.get('action')
@@ -291,6 +293,9 @@ class SecurePassword(validators.FancyValidator):
 
 class UserForm(Schema):
     'User account validator'
+
+    allow_extra_fields = True
+    filter_extra_fields = True
 
     username = All(
         validators.String(

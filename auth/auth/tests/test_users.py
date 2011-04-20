@@ -1,4 +1,6 @@
 'Tests for user account management'
+import re
+
 from auth.tests import TestTemplate
 from auth.models import db, User, User_
 from auth.libraries.tools import hash_string
@@ -68,10 +70,11 @@ class TestUsers(TestTemplate):
         self.assert_(self.userN['username'] in body)
         self.assert_(self.userN['nickname'] in body)
         self.assert_(self.userN['email'] in body)
+        token = re.search("token = '(.*)'", body).group(1)
         # Update credentials
         username, password, nickname, email = ['0' + self.userN[x] for x in 'username', 'password', 'nickname', 'email']
         password_hash = hash_string(password)
-        self.assertJSON(self.app.post(url, dict(username=username, password=password, nickname=nickname, email=email)), 1)
+        self.assertJSON(self.app.post(url, dict(token=token, username=username, password=password, nickname=nickname, email=email)), 1)
         # Make sure the credentials have not changed yet
         self.assertEqual(db.query(User).filter_by(username=username, password_hash=password_hash, nickname=nickname, email=email).count(), 0)
         # Make sure the credentials have changed after confirmation

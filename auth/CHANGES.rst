@@ -12,3 +12,4 @@
 - Made users.update, users.update_
 - Made users.reset
 - Added hashlib.secret
+- Added CSRF token to users.update_

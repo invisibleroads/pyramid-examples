@@ -9,6 +9,9 @@ label {padding-right: 1em}
 </%def>
 
 <%def name='js()'>
+% if not isNew:
+var token = '${request.session.get_csrf_token()}';
+% endif
 // Save default descriptions
 function getFieldID(x) {return x.id.match(/m_(.*)/)[1]}
 function showMessageByID(messageByID) {
@@ -40,6 +43,9 @@ function save() {
         email = $('#email').val();
     $('.lockOnSave').attr('disabled', 'disabled');
     $.post("${request.route_path('user_register' if isNew else 'user_update')}", {
+	% if not isNew:
+		token: token,
+	% endif
         username: username,
         password: password,
         nickname: nickname,
@@ -74,6 +80,7 @@ $('.updateSMSAddress').click(function() {
             break;
     }
     $.post("${request.route_path('user_update')}", {
+		token: token,
 		smsAddressID: smsAddressID, 
 		action: action
 	}, function(data) {

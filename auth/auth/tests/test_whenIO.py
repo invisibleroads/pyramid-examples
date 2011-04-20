@@ -1,9 +1,8 @@
 'Tests for whenIO'
-# Import system modules
 import datetime
 import random
-# Import custom modules
-from auth.lib import whenIO
+
+from auth.libraries import whenIO
 
 
 # Setup
