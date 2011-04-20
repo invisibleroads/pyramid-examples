@@ -3,6 +3,7 @@ from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.security import Allow, Authenticated
 from pyramid.config import Configurator
+from pyramid_beaker import session_factory_from_settings, set_cache_regions_from_settings
 from sqlalchemy import engine_from_config
 from ConfigParser import ConfigParser
 import os
@@ -60,9 +61,16 @@ def main(global_config, **settings):
     config.add_settings({
         'mako.directories': 'auth:templates',
         'mako.default_filters': 'h',
+        'cache.regions': 'short, medium, long',
     })
-    # Configure transaction manager
+    # Configure transaction manager and mailer
     config.include('pyramid_tm')
+    config.include('pyramid_mailer')
+    # Configure sessions and caching
+    if 'session.secret' not in settings:
+        settings['session.secret'] = make_random_string(SECRET_LEN)
+    config.set_session_factory(session_factory_from_settings(settings))
+    set_cache_regions_from_settings(settings)
     # Configure static assets
     config.add_static_view('static', 'auth:static')
     # Configure routes for user account management

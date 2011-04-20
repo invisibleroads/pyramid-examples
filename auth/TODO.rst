@@ -1,6 +1,8 @@
-- Add users.login
 - Add users.register, users.register_
 - Add users.confirm
 - Add users.update, users.update_
 - Add users.reset
 - Fix user_index so that user.when_login displays timezone
+    - Fix whenIO to use pytz and display timezone
+- Add salt to store in db
+- Add CSRF to account update

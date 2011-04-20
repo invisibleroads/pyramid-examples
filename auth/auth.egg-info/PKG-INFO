@@ -3,7 +3,7 @@ Name: auth
 Version: 0.0
 Summary: auth
 Home-page: UNKNOWN
-Author: UNKNOWN
+Author: Roy Hyunjin Han
 Author-email: UNKNOWN
 License: UNKNOWN
 Description: auth README
@@ -15,14 +15,16 @@ Description: auth README
         0.0
         ---
         
-        - Made tests for public, protected, privileged pages
         - Made data models
-        - Made public, protected, privileged pages
-        - Made login and logout views
+        - Made pages.public, pages.protected, pages.privileged
+        - Made users.login, users.login_, users.logout
+        - Made functional tests for pages.public, pages.protected, pages.privileged
+        - Made functional tests for users.login, users.login_, users.logout
+        - Made users.index
         
 Keywords: web wsgi bfg pylons pyramid
 Platform: UNKNOWN
 Classifier: Programming Language :: Python
-Classifier: Framework :: Pylons
+Classifier: Framework :: Pyramid
 Classifier: Topic :: Internet :: WWW/HTTP
 Classifier: Topic :: Internet :: WWW/HTTP :: WSGI :: Application

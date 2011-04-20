@@ -1,10 +1,15 @@
 'Views for user account management'
 import base64
 import datetime
+from email.utils import formataddr
 from pyramid.view import view_config
 from pyramid.security import remember, forget
 from pyramid.httpexceptions import HTTPFound
+from pyramid.renderers import render
+from pyramid_mailer import get_mailer
+from pyramid_mailer.message import Message
 from recaptcha.client import captcha
+from formencode import validators, Schema, All, Invalid
 
 from auth.models import db, User, User_
 from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
@@ -25,6 +30,43 @@ def includeme(config):
 def index(request):
     'Show information about people registered in the database'
     return dict(users=db.query(User).order_by(User.when_login.desc()).all())
+
+
+@view_config(route_name='user_register', renderer='users/change.mak', request_method='GET', permission='__no_permission_required__')
+def register(request):
+    'Show account registration page'
+    return dict(isNew=True, username='', nickname=u'', email='')
+
+
+@view_config(route_name='user_register', renderer='json', request_method='POST', permission='__no_permission_required__')
+def register_(request):
+    'Store proposed changes and send confirmation email'
+    return save_user_(request, dict(request.params), 'registration')
+
+
+@view_config(route_name='user_confirm', permission='__no_permission_required__')
+def confirm(request):
+    'Confirm changes'
+    # Apply changes to user account
+    user_ = apply_user_(request.matchdict.get('ticket', ''))
+    # If the user_ exists,
+    if user_:
+        # Set
+        message = 'Account updated' if user_.user_id else 'Account created'
+        # Delete expired or similar user_
+        db.execute(User_.__table__.delete().where(
+            (User_.when_expired < datetime.datetime.utcnow()) | 
+            (User_.username == user_.username) | 
+            (User_.nickname == user_.nickname) | 
+            (User_.email == user_.email)))
+    # If the user_ does not exist,
+    else:
+        # Set
+        message = 'Ticket expired'
+    # Save flash in session
+    request.session.flash(message)
+    # Return
+    return HTTPFound(location=request.route_path('user_login'))
 
 
 @view_config(route_name='user_login', renderer='users/login.mak', request_method='GET', permission='__no_permission_required__')
@@ -102,3 +144,120 @@ def parse_tokens(tokens):
     offset = int(tokens[1][1:])
     groups = tokens[2:]
     return nickname, offset, groups
+
+
+def save_user_(request, valueByName, action, user=None):
+    'Validate values and send confirmation email if values are okay'
+    # Validate form
+    try:
+        form = UserForm().to_python(valueByName, user)
+    except Invalid, error:
+        return dict(isOk=0, errorByID=error.unpack_errors())
+    # Prepare ticket
+    try:
+        ticket = make_random_unique_string(TICKET_LEN, 
+            lambda x: db.query(User_).filter_by(ticket=x).first() == None)
+    except RuntimeError:
+        return dict(isOk=0, errorByID={'status': 'Could not generate ticket; please try again later'})
+    # Prepare user_
+    user_ = User_(
+        username=form['username'],
+        password_hash=hash_string(form['password']), 
+        nickname=form['nickname'], 
+        email=form['email'],
+        user_id=user.id if user else None,
+        ticket=ticket,
+        when_expired=datetime.datetime.utcnow() + datetime.timedelta(hours=TICKET_HOURS))
+    db.add(user_)
+    # Send message
+    get_mailer(request).send_to_queue(Message(
+        recipients=[
+            formataddr((user_.nickname, user_.email)),
+        ],
+        subject='Confirm {}'.format(action),
+        body=render('users/confirm.mak', {
+            'form': form,
+            'ticket': ticket,
+            'action': action,
+            'TICKET_HOURS': TICKET_HOURS,
+        }, request)))
+    # Return
+    return dict(isOk=1)
+
+
+def apply_user_(ticket):
+    'Finalize a change to a user account'
+    # Load
+    user_ = db.query(User_).filter(
+        (User_.ticket == ticket) & 
+        (User_.when_expired >= datetime.datetime.utcnow())).first()
+    # If the ticket is valid,
+    if user_:
+        # Apply the change and reset rejection_count
+        db.merge(User(
+            id=user_.user_id,
+            username=user_.username,
+            password_hash=user_.password_hash,
+            nickname=user_.nickname,
+            email=user_.email,
+            rejection_count=0))
+    # Return
+    return user_
+
+
+class Unique(validators.FancyValidator):
+    'Validator to ensure that the value of a field is unique'
+
+    def __init__(self, fieldName, errorMessage):
+        'Store fieldName and errorMessage'
+        super(Unique, self).__init__()
+        self.fieldName = fieldName
+        self.errorMessage = errorMessage
+
+    def _to_python(self, value, user):
+        'Check whether the value is unique'
+        # If the user is new or the value changed,
+        if not user or getattr(user, self.fieldName) != value:
+            # Make sure the value is unique
+            if db.query(User).filter(getattr(User, self.fieldName)==value).first():
+                # Raise
+                raise Invalid(self.errorMessage, value, user)
+        # Return
+        return value
+
+
+class SecurePassword(validators.FancyValidator):
+    'Validator to prevent weak passwords'
+
+    def _to_python(self, value, user):
+        'Check whether a password is strong enough'
+        if len(set(value)) < 6:
+            raise Invalid('That password needs more variety', value, user)
+        return value
+
+
+class UserForm(Schema):
+    'User account validator'
+
+    username = All(
+        validators.String(
+            min=USERNAME_LEN_MIN,
+            max=USERNAME_LEN_MAX,
+            strip=True),
+        Unique('username', 'That username already exists'))
+    password = All(
+        validators.MinLength(
+            PASSWORD_LEN_MIN,
+            not_empty=True),
+        SecurePassword())
+    nickname = All(
+        validators.UnicodeString(
+            min=NICKNAME_LEN_MIN,
+            max=NICKNAME_LEN_MAX,
+            strip=True),
+        Unique('nickname', 'That nickname already exists'))
+    email = All(
+        validators.Email(
+            not_empty=True, 
+            strip=True),
+        Unique('email', 'That email is reserved for another account'))

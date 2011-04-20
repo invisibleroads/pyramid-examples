@@ -1,17 +1,28 @@
 'Test templates'
+import os
 import webtest
+import shutil
 import unittest
+import tempfile
 import simplejson
 import transaction
+from ConfigParser import ConfigParser
 
 from auth import main
 from auth.models import db, User
 from auth.libraries.tools import hash_string
 
 
+temporaryFolder = tempfile.mkdtemp()
+
+
 class TestTemplate(unittest.TestCase):
 
-    router = main({}, **{'sqlalchemy.url': 'sqlite://'})
+    router = main({}, **{
+        'sqlalchemy.url': 'sqlite://',
+        'mail.queue_path': os.path.join(temporaryFolder, 'mail'),
+        'mail.default_sender': 'auth <support@example.com>',
+    })
 
     def setUp(self):
         self.app = webtest.TestApp(self.router)
@@ -28,15 +39,22 @@ class TestTemplate(unittest.TestCase):
                     is_super='S' in username))
             transaction.commit()
         self.logout()
+        if not os.path.exists(temporaryFolder):
+            os.mkdir(temporaryFolder)
 
-    def get_url(self, name):
+    def tearDown(self):
+        shutil.rmtree(temporaryFolder)
+
+    def get_url(self, name, **kw):
         'Return URL for route'
-        return self.router.routes_mapper.generate(name, {})
+        return self.router.routes_mapper.generate(name, kw)
 
     def login(self, userD):
+        'Login using credentials'
         return self.app.post(self.get_url('user_login'), userD)
 
     def logout(self):
+        'Logout'
         return self.app.post(self.get_url('user_logout'))
 
     def assertJSON(self, response, isOk):

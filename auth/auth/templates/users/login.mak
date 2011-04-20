@@ -8,7 +8,7 @@
 </%def>
 
 <%def name='toolbar()'>
-## <a class='hover link off' href="${request.route_path('user_register')}">Register for an account</a>
+<a class='hover link off' href="${request.route_path('user_register')}">Register for an account</a>
 </%def>
 
 <%def name='root()'>
