@@ -13,3 +13,5 @@
 - Made users.reset
 - Added hashlib.secret
 - Added CSRF token to users.update_
+- Added whenIO.format_offset and whenIO.parse_offset
+- Fixed users.index to display timezone for when_login

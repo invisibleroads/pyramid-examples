@@ -1,4 +1,4 @@
+- Fix whenIO to use pytz and display timezone
 - Fix user_index so that user.when_login displays timezone
-    - Fix whenIO to use pytz and display timezone
 - Fix sms_address registration
 - Convert auth into paster template

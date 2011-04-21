@@ -38,6 +38,10 @@ $(window).bind('resize', function() {
 $('.dataTables_filter input').focus();
 </%def>
 
+<%!
+from auth.libraries import whenIO
+%>
+
 <table id=users>
 	<thead>
 		<tr>
@@ -50,12 +54,13 @@ $('.dataTables_filter input').focus();
 		<tr>
 			<td>${user.nickname}</td>
 			<td>
-			<%
-			when_login = user.when_login
-			%>
-			% if when_login:
+			% if user.when_login:
+				<%
+				when_login = user.when_login
+				localWhenIO = whenIO.WhenIO(user.offset)
+				%>
 				<span title="${when_login.strftime('%Y%m%d%H%M%S')}"></span>
-				${when_login}
+				${localWhenIO.format(when_login)} ${whenIO.format_offset(user.offset)}
 			% else:
 				<span title=''></span>
 			% endif
