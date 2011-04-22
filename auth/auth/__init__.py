@@ -21,7 +21,8 @@ def main(global_config, **settings):
         configFolder, configName = os.path.split(global_config['__file__'])
         configParser = ConfigParser(global_config)
         if configParser.read(os.path.join(configFolder, '.' + configName)):
-            settings.update(configParser.items('app:auth'))
+            for section in configParser.sections():
+                settings.update(configParser.items(section))
     if 'hashlib.secret' in settings:
         tools.secret = settings['hashlib.secret']
     # Connect to database

@@ -159,6 +159,12 @@ def update_(request):
             smsAddressEmail = validateEmail(params.get('smsAddressEmail', ''))
         except Invalid, error:
             return dict(isOk=0, message=str(error))
+        # Check for duplicates
+        smsAddress = db.query(SMSAddress).filter(
+            (SMSAddress.email == smsAddressEmail) & 
+            (SMSAddress.user_id == userID)).first()
+        if smsAddress:
+            return dict(isOk=0, message='You already added this SMS address')
         # Add it to the database
         smsAddress = SMSAddress(email=smsAddressEmail, user_id=userID, code=make_random_string(CODE_LEN))
         db.add(smsAddress)

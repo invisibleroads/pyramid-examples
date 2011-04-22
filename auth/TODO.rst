@@ -1,4 +1,1 @@
-- Prevent duplicate sms addresses
-- Fix sms_address registration
-- Add email queueing crontab
 - Convert auth into paster template

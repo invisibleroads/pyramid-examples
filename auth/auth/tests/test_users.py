@@ -100,6 +100,9 @@ class TestUsers(TestTemplate):
         smsAddressEmail = 'sms2@example.com'
         self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='add', smsAddressEmail=smsAddressEmail)), 1)
         smsAddress2 = db.query(SMSAddress).filter_by(email=smsAddressEmail).first()
+        # Add a duplicate smsAddress
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='add', smsAddressEmail=smsAddressEmail)), 0)
+        # Login
         self.login(self.userN)
         # Activate an smsAddress that doesn't belong to the user
         self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='activate', smsAddressID=smsAddress2.id, smsAddressCode=smsAddress2.code)), 0)

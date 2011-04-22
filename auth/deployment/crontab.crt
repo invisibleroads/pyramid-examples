@@ -1,0 +1,4 @@
+# Start server every twenty minutes
+15,35,55 * * * * cd /var/www/virtualenv/auth;source ../bin/activate;paster serve --daemon production.ini >> /dev/null 2>&1
+# Check outbox every minute
+* * * * * cd /var/www/virtualenv/auth;source ../bin/activate;qp data/mail --config .production.ini >> /dev/null 2>&1
