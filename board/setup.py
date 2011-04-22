@@ -38,7 +38,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: WSGI :: Application',
     ],
-    author='',
+    author='Roy Hyunjin Han',
     author_email='',
     url='',
     keywords='web wsgi bfg pylons pyramid',
@@ -46,7 +46,6 @@ setup(
     include_package_data=True,
     zip_safe=False,
     test_suite='board',
-    install_requires = requires,
-    entry_points = entry_points,
-    paster_plugins=['pyramid'],
-)
+    install_requires=requires,
+    entry_points=entry_points,
+    paster_plugins=['pyramid'])

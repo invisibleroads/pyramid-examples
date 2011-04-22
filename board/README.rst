@@ -1,6 +1,6 @@
 Bulletin board
 ==============
-The bulletin board example demonstrates simple view configuration, authentication and authorization using the Pyramid web application framework. ::
+The bulletin board example demonstrates simple view configuration using the Pyramid web application framework. ::
 
     # Activate isolated environment
     source ../../bin/activate
