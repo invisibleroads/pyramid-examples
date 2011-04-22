@@ -20,6 +20,7 @@ auth.egg-info/requires.txt
 auth.egg-info/top_level.txt
 auth/libraries/__init__.py
 auth/libraries/tools.py
+auth/libraries/whenIO.py
 auth/static/favicon.ico
 auth/static/jquery-1.5.2.min.js
 auth/static/recaptcha_ajax.js
@@ -33,15 +34,18 @@ auth/static/dataTables/sort_desc.png
 auth/static/dataTables/sort_desc_disabled.png
 auth/static/dataTables/style.css
 auth/templates/base.mak
+auth/templates/form.mak
 auth/templates/page.mak
 auth/templates/users/change.mak
 auth/templates/users/confirm.mak
 auth/templates/users/index.mak
 auth/templates/users/login.mak
 auth/templates/users/offsets.mak
+auth/templates/users/smsAddresses.mak
 auth/tests/__init__.py
 auth/tests/test_pages.py
 auth/tests/test_users.py
+auth/tests/test_whenIO.py
 auth/views/__init__.py
 auth/views/pages.py
 auth/views/users.py

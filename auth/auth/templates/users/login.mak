@@ -85,9 +85,9 @@ function reset() {
         'email': email
     }, function(data) {
         if (data.isOk) {
-            $('#m_password').html('Please check your mailbox');
+            $('#m_password').html('<b>Please check your mailbox</b>');
         } else {
-            $('#m_password').html('Email not found');
+            $('#m_password').html('<b>Email not found</b>');
             $('.lockOnReset').removeAttr('disabled');
         }
     });

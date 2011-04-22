@@ -1,1 +1,0 @@
-- Convert auth into paster template

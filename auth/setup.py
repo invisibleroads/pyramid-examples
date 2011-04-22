@@ -35,7 +35,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='auth',
-    version='0.0',
+    version='0.1',
     description='auth',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
@@ -52,6 +52,6 @@ setup(
     include_package_data=True,
     zip_safe=False,
     test_suite='auth',
-    install_requires = requires,
+    install_requires=requires,
     entry_points = entry_points,
     paster_plugins=['pyramid'])
