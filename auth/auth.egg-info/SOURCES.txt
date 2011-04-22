@@ -2,7 +2,6 @@
 CHANGES.rst
 MANIFEST.in
 README.rst
-TODO.rst
 development.ini
 production.ini
 setup.cfg
