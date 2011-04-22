@@ -10,7 +10,7 @@ from auth.libraries.tools import hash_string, make_random_string
 from auth.parameters import *
 
 
-db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
@@ -77,10 +77,10 @@ class SMSAddress(Base):
     __tablename__ = 'sms_addresses'
     id = Column(Integer, primary_key=True)
     email = column_property(
-        Column(String(EMAIL_LEN_MAX), unique=True), 
+        Column(String(EMAIL_LEN_MAX)), 
         comparator_factory=CaseInsensitiveComparator)
     user_id = Column(ForeignKey('users.id'))
-    is_active = Column(Boolean, default=False)
+    code = Column(String(CODE_LEN))
 
     def __repr__(self):
         return "<SMSAddress('%s')>" % self.email
@@ -88,6 +88,7 @@ class SMSAddress(Base):
 
 def initialize_sql(engine):
     'Create tables and insert data'
+    db = DBSession()
     # Create tables
     db.configure(bind=engine)
     Base.metadata.bind = engine
@@ -106,5 +107,3 @@ def initialize_sql(engine):
             db.add(User(username=username, password_hash=hash_string(password), nickname=nickname, email=email, is_super=is_super))
         print
         transaction.commit()
-    # Return
-    return db

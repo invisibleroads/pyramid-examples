@@ -72,7 +72,6 @@ function login() {
         }
     });
 }
-<%doc>
 function reset() {
     // Check that the email is not empty
     var email = $.trim($('#resetEmail').val());
@@ -101,7 +100,6 @@ $('#resetLink').click(function() {
     $('#resetEmail').val('').keydown(function(e) {if (e.keyCode == 13) reset()}).focus();
 });
 $('#reset').click(reset);
-</%doc>
 
 // Prepare login form
 $('#login').click(login);
@@ -119,7 +117,7 @@ $('#username').focus();
 		<td><input id=username></td>
 		<td>
 			<span id=m_username>
-				## ${'. '.join(request.session.pop_flash())}
+				${'. '.join(request.session.pop_flash())}
 			</span>
 			<span id=resetPack>
 				<a id=resetLink class='hover link off'>Did you forget your login?</a>

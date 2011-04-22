@@ -31,9 +31,9 @@
 % endfor
 	&nbsp;
 	% if USER_ID:
-		<a href="${request.route_path('user_logout', path=request.path)}" class='hover link off'>Logout</a>
+		<a href="${request.route_path('user_logout', _query=dict(url=request.path))}" class='hover link off'>Logout</a>
 	% elif path != request.route_path('user_login') and request.exception.__class__.__name__ != 'Forbidden':
-		<a href="${request.route_path('user_login', path=request.path)}" class='hover link off'>Login</a>
+		<a href="${request.route_path('user_login', _query=dict(url=request.path))}" class='hover link off'>Login</a>
 	% else:
 		<b>Login</b>
 	% endif

@@ -9,7 +9,7 @@ import transaction
 from ConfigParser import ConfigParser
 
 from auth import main
-from auth.models import db, User
+from auth.models import DBSession, User
 from auth.libraries.tools import hash_string
 
 
@@ -25,6 +25,7 @@ class TestTemplate(unittest.TestCase):
     })
 
     def setUp(self):
+        db = DBSession()
         # Initialize functional test framework
         self.app = webtest.TestApp(self.router)
         self.logout()

@@ -12,7 +12,7 @@ from formencode import validators, Schema, All, Invalid
 from recaptcha.client import captcha
 from sqlalchemy.orm import joinedload
 
-from auth.models import db, User, User_
+from auth.models import DBSession, User, User_, SMSAddress
 from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
 from auth.parameters import *
 
@@ -30,13 +30,14 @@ def includeme(config):
 @view_config(route_name='user_index', renderer='users/index.mak', permission='__no_permission_required__')
 def index(request):
     'Show information about people registered in the database'
+    db = DBSession()
     return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
 @view_config(route_name='user_register', renderer='users/change.mak', request_method='GET', permission='__no_permission_required__')
 def register(request):
     'Show account registration page'
-    return dict(isNew=True, username='', nickname=u'', email='')
+    return dict(user=None)
 
 
 @view_config(route_name='user_register', renderer='json', request_method='POST', permission='__no_permission_required__')
@@ -48,6 +49,7 @@ def register_(request):
 @view_config(route_name='user_confirm', permission='__no_permission_required__')
 def confirm(request):
     'Confirm changes'
+    db = DBSession()
     # Apply changes to user account
     user_ = apply_user_(request.matchdict.get('ticket', ''))
     # If the user_ exists,
@@ -89,6 +91,7 @@ def login(request):
 @view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')
 def login_(request):
     'Process login credentials'
+    db = DBSession()
     # Make shortcuts
     environ, params, registry = [getattr(request, x) for x in 'environ', 'params', 'registry']
     username, password = [params.get(x, '').strip() for x in 'username', 'password']
@@ -134,42 +137,71 @@ def logout(request):
 @view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
 def update(request):
     'Show account update page'
+    db = DBSession()
     userID = authenticated_userid(request)
     user = db.query(User).options(joinedload(User.sms_addresses)).get(userID)
-    return dict(isNew=False, username=user.username, nickname=user.nickname, email=user.email)
+    return dict(user=user)
 
 
 @view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
 def update_(request):
     'Update account'
+    db = DBSession()
     params = request.params
     if params.get('token') != request.session.get_csrf_token():
         return dict(isOk=0, message='Invalid token')
     userID = authenticated_userid(request)
-    # If the user is trying to update SMS information,
-    # if 'smsAddressID' in params:
-        # action = params.get('action')
-        # smsAddressID = params['smsAddressID']
-        # smsAddress = db.query(SMSAddress).filter(
-            # (SMSAddress.id == smsAddressID) & 
-            # (SMSAddress.owner_id==userID)).first()
-        # if not smsAddress:
-            # return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
-        # elif 'activate' in action:
-            # smsAddress.is_active = 'activate' == action
-        # elif 'remove' == action:
-            # db.delete(smsAddress)
-        # else:
-            # return dict(isOk=0, message='Command not recognized')
-        # Return
-        # return dict(isOk=1)
     # If the user is trying to update account information, send confirmation email
-    return save_user_(request, dict(params), 'update', db.query(User).get(userID))
+    if 'username' in params:
+        return save_user_(request, dict(params), 'update', db.query(User).get(userID))
+    # Load
+    smsAddressAction = params.get('smsAddressAction')
+    # If the user is adding an SMS address,
+    if 'add' == smsAddressAction:
+        # Make sure it is a valid email address
+        validateEmail = validators.Email().to_python
+        try:
+            smsAddressEmail = validateEmail(params.get('smsAddressEmail', ''))
+        except Invalid, error:
+            return dict(isOk=0, message=str(error))
+        # Add it to the database
+        smsAddress = SMSAddress(email=smsAddressEmail, user_id=userID, code=make_random_string(CODE_LEN))
+        db.add(smsAddress)
+        # Send confirmation code
+        get_mailer(request).send_to_queue(Message(
+            recipients=[smsAddress.email],
+            body=smsAddress.code))
+        # Return smsAddresses
+        return dict(isOk=1, content=render('users/smsAddresses.mak', {
+            'user': db.query(User).options(joinedload(User.sms_addresses)).get(userID)
+        }, request))
+    # Make sure the smsAddressID belongs to the user
+    smsAddressID = params.get('smsAddressID')
+    smsAddress = db.query(SMSAddress).filter(
+        (SMSAddress.id == smsAddressID) & 
+        (SMSAddress.user_id == userID)).first()
+    if not smsAddress:
+        return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
+    # If the user is activating an SMS address,
+    if 'activate' == smsAddressAction:
+        # If the code is not correct, return error message
+        if params.get('smsAddressCode') != smsAddress.code:
+            return dict(isOk=0, message='Code is not valid')
+        # Clear code
+        smsAddress.code = None
+        return dict(isOk=1)
+    # If the user is removing an SMS address,
+    elif 'remove' == smsAddressAction:
+        db.delete(smsAddress)
+        return dict(isOk=1)
+    # If the command is not recognized,
+    return dict(isOk=0, message='Command not recognized')
 
 
 @view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
 def reset(request):
     'Reset password'
+    db = DBSession()
     # Get email
     email = request.params.get('email')
     # Try to load the user
@@ -203,6 +235,7 @@ def parse_tokens(tokens):
 
 def save_user_(request, valueByName, action, user=None):
     'Validate values and send confirmation email if values are okay'
+    db = DBSession()
     # Validate form
     try:
         form = UserForm().to_python(valueByName, user)
@@ -226,9 +259,7 @@ def save_user_(request, valueByName, action, user=None):
     db.add(user_)
     # Send message
     get_mailer(request).send_to_queue(Message(
-        recipients=[
-            formataddr((user_.nickname, user_.email)),
-        ],
+        recipients=[formataddr((user_.nickname, user_.email))],
         subject='Confirm {}'.format(action),
         body=render('users/confirm.mak', {
             'form': form,
@@ -242,6 +273,7 @@ def save_user_(request, valueByName, action, user=None):
 
 def apply_user_(ticket):
     'Finalize a change to a user account'
+    db = DBSession()
     # Load
     user_ = db.query(User_).filter(
         (User_.ticket == ticket) & 
@@ -271,6 +303,7 @@ class Unique(validators.FancyValidator):
 
     def _to_python(self, value, user):
         'Check whether the value is unique'
+        db = DBSession()
         # If the user is new or the value changed,
         if not user or getattr(user, self.fieldName) != value:
             # Make sure the value is unique

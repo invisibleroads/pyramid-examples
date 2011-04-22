@@ -2,7 +2,7 @@
 import re
 
 from auth.tests import TestTemplate
-from auth.models import db, User, User_
+from auth.models import DBSession, User, User_, SMSAddress
 from auth.libraries.tools import hash_string
 
 
@@ -10,12 +10,14 @@ class TestUsers(TestTemplate):
 
     def test_index(self):
         'Assert that the user index page shows how many accounts are on file'
+        db = DBSession()
         url = self.get_url('user_index')
         # Make sure that the user index page is visible
         self.assert_('%s users' % db.query(User).count() in self.app.get(url).body)
 
     def test_registration(self):
         'Make sure that registration works'
+        db = DBSession()
         url = self.get_url('user_register')
         username = password = nickname = 'mathematics'
         email = username + '@example.com'
@@ -60,6 +62,7 @@ class TestUsers(TestTemplate):
 
     def test_update(self):
         'Make sure that updating credentials works'
+        db = DBSession()
         url = self.get_url('user_update')
         # Check that we only see the login page if the user is not logged in
         self.assert_('value=Login' in self.app.get(url).body)
@@ -71,9 +74,10 @@ class TestUsers(TestTemplate):
         self.assert_(self.userN['nickname'] in body)
         self.assert_(self.userN['email'] in body)
         token = re.search("token = '(.*)'", body).group(1)
-        # Update credentials
+        # Updating credentials requires a token
         username, password, nickname, email = ['0' + self.userN[x] for x in 'username', 'password', 'nickname', 'email']
         password_hash = hash_string(password)
+        self.assertJSON(self.app.post(url, dict(username=username, password=password, nickname=nickname, email=email)), 0)
         self.assertJSON(self.app.post(url, dict(token=token, username=username, password=password, nickname=nickname, email=email)), 1)
         # Make sure the credentials have not changed yet
         self.assertEqual(db.query(User).filter_by(username=username, password_hash=password_hash, nickname=nickname, email=email).count(), 0)
@@ -81,26 +85,42 @@ class TestUsers(TestTemplate):
         self.app.get(self.get_url('user_confirm', ticket=db.query(User_.ticket).filter_by(email=email).order_by(User_.when_expired.desc()).first()[0]))
         self.assertEqual(db.query(User).filter_by(username=username, password_hash=password_hash, nickname=nickname, email=email).count(), 1)
 
-        # Load people
-        # user1 = db.query(User).filter_by(username=username_, password_hash=hash_string(password_), nickname=nickname_, email=email_).first()
-        # user2 = db.query(User).filter_by(username=username + 'x').first()
-        # Add SMSAddress
-        # smsAddress = SMSAddress(emailSMS, user2.id)
-        # db.add(smsAddress)
-        # db.commit()
-        # smsAddressID = smsAddress.id
-        # Make sure that only the owner can update SMS information
-        # self.app.post(url('user_login'), dict(username=username, password=password))
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='activate')), 0)
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='deactivate')), 0)
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='remove')), 0)
-        # self.app.post(url('user_login'), dict(username=username + 'x', password=password))
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='activate')), 1)
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='deactivate')), 1)
-        # self.assertJSON(self.app.post(url, dict(smsAddressID=smsAddressID, action='remove')), 1)
+    def test_update_smsAddress(self):
+        'Make sure that updating smsAddresses works'
+        db = DBSession()
+        url = self.get_url('user_update')
+        # Get token
+        self.login(self.userN)
+        body = self.app.get(url).body
+        token = re.search("token = '(.*)'", body).group(1)
+        # Add an smsAddress that is not a valid email address
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='add', smsAddressEmail='xxx')), 0)
+        # Add an smsAddress that is a valid email address
+        self.login(self.userN)
+        smsAddressEmail = 'sms1@example.com'
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='add', smsAddressEmail=smsAddressEmail)), 1)
+        smsAddress1 = db.query(SMSAddress).filter_by(email=smsAddressEmail).first()
+        self.login(self.userS)
+        smsAddressEmail = 'sms2@example.com'
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='add', smsAddressEmail=smsAddressEmail)), 1)
+        smsAddress2 = db.query(SMSAddress).filter_by(email=smsAddressEmail).first()
+        self.login(self.userN)
+        # Activate an smsAddress that doesn't belong to the user
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='activate', smsAddressID=smsAddress2.id, smsAddressCode=smsAddress2.code)), 0)
+        # Activate an smsAddress with a bad code
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='activate', smsAddressID=smsAddress1.id, smsAddressCode=smsAddress1.code + 'x')), 0)
+        # Activate an smsAddress with a good code
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='activate', smsAddressID=smsAddress1.id, smsAddressCode=smsAddress1.code)), 1)
+        # Remove an smsAddress that doesn't belong to the user
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='remove', smsAddressID=smsAddress2.id)), 0)
+        # Remove an smsAddress that does belong to the user
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='remove', smsAddressID=smsAddress1.id)), 1)
+        # Send an invalid command
+        self.assertJSON(self.app.post(url, dict(token=token, smsAddressAction='xxx')), 0)
 
     def test_reset(self):
         'Make sure that resetting the password works'
+        db = DBSession()
         url = self.get_url('user_reset')
         email = self.userN['email']
         password_hash = hash_string(self.userN['password'])

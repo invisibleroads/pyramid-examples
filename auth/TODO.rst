@@ -1,4 +1,4 @@
-- Fix whenIO to use pytz and display timezone
-- Fix user_index so that user.when_login displays timezone
+- Prevent duplicate sms addresses
 - Fix sms_address registration
+- Add email queueing crontab
 - Convert auth into paster template
