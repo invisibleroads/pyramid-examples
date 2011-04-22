@@ -1,2 +1,0 @@
-    [paste.app_factory]
-    main = board:main

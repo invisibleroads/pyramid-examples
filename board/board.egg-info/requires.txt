@@ -1,6 +1,0 @@
-pyramid
-pyramid_beaker
-SQLAlchemy
-transaction
-zope.sqlalchemy
-WebError
