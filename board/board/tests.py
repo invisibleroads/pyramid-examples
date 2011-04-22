@@ -5,7 +5,7 @@ from pyramid import testing
 from pyramid_beaker import set_cache_regions_from_settings
 from sqlalchemy import create_engine
 
-from board.models import DBSession, Post, initialize_sql
+from board.models import db, Post, initialize_sql
 
 
 initialize_sql(create_engine('sqlite://'))
@@ -25,14 +25,12 @@ class TestViews(unittest.TestCase):
 
     def test_index(self):
         from board.views import index
-        db = DBSession()
         # Make sure that index() returns as many posts as exist in the database
         info = index(testing.DummyRequest())
         self.assertEqual(len(info['posts']), db.query(Post).count())
 
     def test_index_(self):
         from board.views import index_
-        db = DBSession()
         # Make sure that index_() does not add empty posts
         postCount = db.query(Post).count()
         info = index_(testing.DummyRequest(params={'text': u''}, post=True))

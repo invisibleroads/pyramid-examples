@@ -2,7 +2,7 @@
 import re
 
 from auth.tests import TestTemplate
-from auth.models import DBSession, User, User_, SMSAddress
+from auth.models import db, User, User_, SMSAddress
 from auth.libraries.tools import hash_string
 
 
@@ -10,14 +10,12 @@ class TestUsers(TestTemplate):
 
     def test_index(self):
         'Assert that the user index page shows how many accounts are on file'
-        db = DBSession()
         url = self.get_url('user_index')
         # Make sure that the user index page is visible
         self.assert_('%s users' % db.query(User).count() in self.app.get(url).body)
 
     def test_registration(self):
         'Make sure that registration works'
-        db = DBSession()
         url = self.get_url('user_register')
         username = password = nickname = 'mathematics'
         email = username + '@example.com'
@@ -62,7 +60,6 @@ class TestUsers(TestTemplate):
 
     def test_update(self):
         'Make sure that updating credentials works'
-        db = DBSession()
         url = self.get_url('user_update')
         # Check that we only see the login page if the user is not logged in
         self.assert_('value=Login' in self.app.get(url).body)
@@ -87,7 +84,6 @@ class TestUsers(TestTemplate):
 
     def test_update_smsAddress(self):
         'Make sure that updating smsAddresses works'
-        db = DBSession()
         url = self.get_url('user_update')
         # Get token
         self.login(self.userN)
@@ -120,7 +116,6 @@ class TestUsers(TestTemplate):
 
     def test_reset(self):
         'Make sure that resetting the password works'
-        db = DBSession()
         url = self.get_url('user_reset')
         email = self.userN['email']
         password_hash = hash_string(self.userN['password'])

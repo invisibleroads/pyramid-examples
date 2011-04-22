@@ -10,7 +10,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 TEXT_LEN_MAX = 256
 
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
@@ -26,7 +26,6 @@ class Post(Base):
 
 def initialize_sql(engine):
     'Create tables and insert data'
-    db = DBSession()
     # Create tables
     db.configure(bind=engine)
     Base.metadata.bind = engine

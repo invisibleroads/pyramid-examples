@@ -12,7 +12,7 @@ from formencode import validators, Schema, All, Invalid
 from recaptcha.client import captcha
 from sqlalchemy.orm import joinedload
 
-from auth.models import DBSession, User, User_, SMSAddress
+from auth.models import db, User, User_, SMSAddress
 from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
 from auth.parameters import *
 
@@ -30,7 +30,6 @@ def includeme(config):
 @view_config(route_name='user_index', renderer='users/index.mak', permission='__no_permission_required__')
 def index(request):
     'Show information about people registered in the database'
-    db = DBSession()
     return dict(users=db.query(User).order_by(User.when_login.desc()).all())
 
 
@@ -49,7 +48,6 @@ def register_(request):
 @view_config(route_name='user_confirm', permission='__no_permission_required__')
 def confirm(request):
     'Confirm changes'
-    db = DBSession()
     # Apply changes to user account
     user_ = apply_user_(request.matchdict.get('ticket', ''))
     # If the user_ exists,
@@ -91,7 +89,6 @@ def login(request):
 @view_config(route_name='user_login', renderer='json', request_method='POST', permission='__no_permission_required__')
 def login_(request):
     'Process login credentials'
-    db = DBSession()
     # Make shortcuts
     environ, params, registry = [getattr(request, x) for x in 'environ', 'params', 'registry']
     username, password = [params.get(x, '').strip() for x in 'username', 'password']
@@ -137,7 +134,6 @@ def logout(request):
 @view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
 def update(request):
     'Show account update page'
-    db = DBSession()
     userID = authenticated_userid(request)
     user = db.query(User).options(joinedload(User.sms_addresses)).get(userID)
     return dict(user=user)
@@ -146,7 +142,6 @@ def update(request):
 @view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
 def update_(request):
     'Update account'
-    db = DBSession()
     params = request.params
     if params.get('token') != request.session.get_csrf_token():
         return dict(isOk=0, message='Invalid token')
@@ -201,7 +196,6 @@ def update_(request):
 @view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
 def reset(request):
     'Reset password'
-    db = DBSession()
     # Get email
     email = request.params.get('email')
     # Try to load the user
@@ -235,7 +229,6 @@ def parse_tokens(tokens):
 
 def save_user_(request, valueByName, action, user=None):
     'Validate values and send confirmation email if values are okay'
-    db = DBSession()
     # Validate form
     try:
         form = UserForm().to_python(valueByName, user)
@@ -273,7 +266,6 @@ def save_user_(request, valueByName, action, user=None):
 
 def apply_user_(ticket):
     'Finalize a change to a user account'
-    db = DBSession()
     # Load
     user_ = db.query(User_).filter(
         (User_.ticket == ticket) & 
@@ -303,7 +295,6 @@ class Unique(validators.FancyValidator):
 
     def _to_python(self, value, user):
         'Check whether the value is unique'
-        db = DBSession()
         # If the user is new or the value changed,
         if not user or getattr(user, self.fieldName) != value:
             # Make sure the value is unique

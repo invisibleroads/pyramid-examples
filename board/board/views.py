@@ -3,7 +3,7 @@ from pyramid.view import view_config
 from beaker.cache import cache_region, region_invalidate
 import transaction
 
-from board.models import DBSession, Post
+from board.models import db, Post
 
 
 def includeme(config):
@@ -21,7 +21,6 @@ def index(request):
 @view_config(route_name='index', renderer='index_.mak', request_method='POST') 
 def index_(request):
     'Add a post'
-    db = DBSession()
     # Load
     text = request.params.get('text', '').strip()
     if text:
@@ -41,5 +40,4 @@ def debug(request):
 
 @cache_region('minute')
 def get_posts():
-    db = DBSession()
     return db.query(Post).order_by(Post.id.desc()).all()

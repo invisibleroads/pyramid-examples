@@ -10,7 +10,7 @@ from auth.libraries.tools import hash_string, make_random_string
 from auth.parameters import *
 
 
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
+db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
@@ -88,7 +88,6 @@ class SMSAddress(Base):
 
 def initialize_sql(engine):
     'Create tables and insert data'
-    db = DBSession()
     # Create tables
     db.configure(bind=engine)
     Base.metadata.bind = engine
