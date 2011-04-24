@@ -16,6 +16,7 @@ requires = [
     'transaction',
     'WebError',
     'webtest',
+    'whenIO',
     'zope.sqlalchemy',
 ]
 if sys.version_info[:3] < (2,5,0):

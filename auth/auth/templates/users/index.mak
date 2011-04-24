@@ -39,7 +39,7 @@ $('.dataTables_filter input').focus();
 </%def>
 
 <%!
-from auth.libraries import whenIO
+import whenIO
 %>
 
 <table id=users>

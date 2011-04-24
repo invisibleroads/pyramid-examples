@@ -14,7 +14,7 @@ def main(global_config, **settings):
     # Define methods
     def make_renderer_globals(system):
         'Define template constants'
-        return {'SITE_NAME': 'Board'}
+        return {'SITE_NAME': 'board'}
     # Prepare configuration
     config = Configurator(settings=settings, 
         renderer_globals_factory=make_renderer_globals)
