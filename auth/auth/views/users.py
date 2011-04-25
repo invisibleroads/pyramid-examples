@@ -18,6 +18,7 @@ from auth.parameters import *
 
 
 def includeme(config):
+    config.scan(__name__)
     config.add_route('user_index', 'users')
     config.add_route('user_register', 'users/register')
     config.add_route('user_confirm', 'users/confirm/{ticket}')

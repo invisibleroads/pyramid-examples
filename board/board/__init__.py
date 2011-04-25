@@ -23,7 +23,6 @@ def main(global_config, **settings):
     # Configure static assets
     config.add_static_view('static', 'board:static')
     # Configure routes
-    config.scan(views)
     config.include(views)
     # Return WSGI app
     return config.make_wsgi_app()

@@ -8,6 +8,7 @@ from board.models import db, Post
 
 def includeme(config):
     'Add routes'
+    config.scan(__name__)
     config.add_route('index', '')
     config.add_route('debug', 'debug')
 

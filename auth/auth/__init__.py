@@ -77,10 +77,8 @@ def main(global_config, **settings):
     # Configure static assets
     config.add_static_view('static', 'auth:static')
     # Configure routes for user account management
-    config.scan(users)
     config.include(users)
     # Configure routes that demonstrate access control
-    config.scan(pages)
     config.include(pages)
     # Return WSGI app
     return config.make_wsgi_app()

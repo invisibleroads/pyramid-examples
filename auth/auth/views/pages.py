@@ -3,6 +3,7 @@ from pyramid.view import view_config
 
 
 def includeme(config):
+    config.scan(__name__)
     config.add_route('page_public', '')
     config.add_route('page_protected', '/protected')
     config.add_route('page_privileged', '/privileged')
