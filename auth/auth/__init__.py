@@ -10,7 +10,7 @@ import os
 
 from auth.libraries import tools
 from auth.models import initialize_sql
-from auth.views import pages, users
+from auth.views import users, pages
 from auth.parameters import *
 
 
