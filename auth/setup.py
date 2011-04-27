@@ -1,7 +1,8 @@
 import os
 import sys
-
 from setuptools import setup, find_packages
+
+from auth.parameters import SITE_VERSION
 
 
 requires = [
@@ -36,7 +37,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='auth',
-    version='0.1',
+    version=SITE_VERSION,
     description='auth',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[
