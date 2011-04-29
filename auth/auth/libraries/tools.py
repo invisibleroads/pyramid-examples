@@ -5,8 +5,8 @@ from Crypto.Cipher import AES
 
 
 alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-secret1 = ''            # Set this in .development.ini or .production.ini
-secret2 = alphabet[:32] # Set this in .development.ini or .production.ini
+secret1 = ''       # Set this in .development.ini or .production.ini
+secret2 = alphabet # Set this in .development.ini or .production.ini
 
 
 def hash(string): 
@@ -16,12 +16,12 @@ def hash(string):
 
 def encrypt(string):
     'Encrypt string'
-    return AES.new(secret2, AES.MODE_CFB).encrypt(string.encode('utf8'))
+    return AES.new(secret2[:32], AES.MODE_CFB).encrypt(string.encode('utf8'))
 
 
 def decrypt(string):
     'Decrypt string'
-    return AES.new(secret2, AES.MODE_CFB).decrypt(string).decode('utf8')
+    return AES.new(secret2[:32], AES.MODE_CFB).decrypt(string).decode('utf8')
 
 
 def make_random_string(length):
