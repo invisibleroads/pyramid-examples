@@ -5,6 +5,7 @@ from pyramid.security import Allow, Authenticated
 from pyramid.config import Configurator
 from pyramid_beaker import session_factory_from_settings, set_cache_regions_from_settings
 from sqlalchemy import engine_from_config
+from sqlalchemy.pool import QueuePool, NullPool
 from ConfigParser import ConfigParser
 import os
 
@@ -28,7 +29,9 @@ def main(global_config, **settings):
     if 'ciphers.secret' in settings:
         tools.secret2 = settings['ciphers.secret']
     # Connect to database
-    initialize_sql(engine_from_config(settings, 'sqlalchemy.'))
+    sqlalchemyURL = settings['sqlalchemy.url'].strip()
+    initialize_sql(engine_from_config(settings, 'sqlalchemy.', 
+        poolclass=NullPool if sqlalchemyURL.startswith('sqlite:///') else QueuePool))
     # Define methods
     def get_groups(userID, request):
         'Return a list of groups associated with the authenticated user'
