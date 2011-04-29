@@ -52,7 +52,7 @@ function login() {
         loginData['recaptcha_response'] = $('#recaptcha_response_field').val();
     }
     // Attempt login
-    $.post("${request.route_path('user_login')}", loginData, function(data) {
+    post("${request.route_path('user_login')}", loginData, function(data) {
         if (data.isOk) {
             window.location = "${url}";
         } else {
@@ -81,7 +81,7 @@ function reset() {
     }
     // Post
     $('.lockOnReset').attr('disabled', true);
-    $.post("${request.route_path('user_reset')}", {
+    post("${request.route_path('user_reset')}", {
         'email': email
     }, function(data) {
         if (data.isOk) {

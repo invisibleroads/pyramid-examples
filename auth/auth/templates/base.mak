@@ -50,6 +50,22 @@ ${self.root()}
 	});
 	function getNumber(x) {return /\d+/.exec(x)[0]}
 	function getID(obj) {return getNumber(obj.id)}
+    function ajax(type, url, data, callback) {
+        $.ajax({
+            type: type,
+            url: url,
+            data: data,
+            dataType: 'json',
+            success: callback,
+            error: function(jqXHR, textStatus, errorThrown) {
+                if (textStatus == 'parsererror') {
+                    window.location = "${request.route_path('user_login')}?url=" + window.location.pathname;
+                }
+            }
+        });
+    }
+    function get(url, data, callback) {return ajax('GET', url, data, callback)}
+    function post(url, data, callback) {return ajax('POST', url, data, callback)}
 	${self.js()}
 </script>
 </body>

@@ -43,7 +43,7 @@ function save() {
         nickname = $('#nickname').val(), 
         email = $('#email').val();
     $('.lockOnSave').attr('disabled', 'disabled');
-	$.post("${request.route_path('user_update' if user else 'user_register')}", {
+	post("${request.route_path('user_update' if user else 'user_register')}", {
 	% if user:
 		token: token,
 	% endif
@@ -71,7 +71,7 @@ $('#smsAddressEmail').live('keydown', function(e) {
 		if (!smsAddressEmail.length) {
 			return showMessageByID({smsAddressEmail: 'Please enter a value'});
 		}
-		$.post("${request.route_path('user_update')}", {
+		post("${request.route_path('user_update')}", {
 			token: token,
 			smsAddressAction: 'add',
 			smsAddressEmail: smsAddressEmail
@@ -89,7 +89,7 @@ $('.smsAddressCode').live('keydown', function() {
 	if (e.keyCode == 13) {
 		var smsAddressID = getID(this), smsAddressCode = $(this), smsAddressEmail = $('#smsAddressEmail' + smsAddressID);
 		smsAddressCode.attr('disabled', 'disabled');
-		$.post("${request.route_path('user_update')}", {
+		post("${request.route_path('user_update')}", {
 			token: token,
 			smsAddressAction: 'activate',
 			smsAddressID: smsAddressID,
@@ -109,7 +109,7 @@ $('.smsAddressCode').live('keydown', function() {
 $('.smsAddressRemove').live('click', function() {
 	var smsAddressID = getID(this), smsAddress = $('#smsAddress' + smsAddressID);
 	smsAddress.hide();
-	$.post("${request.route_path('user_update')}", {
+	post("${request.route_path('user_update')}", {
 		token: token,
 		smsAddressAction: 'remove',
 		smsAddressID: smsAddressID
@@ -122,13 +122,11 @@ $('.smsAddressRemove').live('click', function() {
 });
 // Show SMS address code input box after user clicks on text
 $('.smsAddressInactive').live({
-	hover: function() {
-		var objThis = $(this), objFlag = objThis.find('span.flag');
-		if (objFlag.length) {
-			objFlag.remove();
-		} else {
-			objThis.append('<span class=flag>&nbsp; activate</span>');
-		}
+	mouseenter: function() {
+		$(this).append('<span class=flag>&nbsp; activate</span>');
+	},
+	mouseleave: function() {
+		$(this).find('.flag').remove();
 	},
 	click: function() {
 		$(this).hide();

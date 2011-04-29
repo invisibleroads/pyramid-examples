@@ -13,7 +13,7 @@ from recaptcha.client import captcha
 from sqlalchemy.orm import joinedload
 
 from auth.models import db, User, User_, SMSAddress
-from auth.libraries.tools import hash_string, make_random_string, make_random_unique_string
+from auth.libraries.tools import hash, make_random_string, make_random_unique_string
 from auth.parameters import *
 
 
@@ -25,6 +25,7 @@ def includeme(config):
     config.add_route('user_login', 'users/login')
     config.add_route('user_logout', 'users/logout')
     config.add_route('user_update', 'users/update')
+    config.add_route('user_move', 'users/move')
     config.add_route('user_reset', 'users/reset')
 
 
@@ -100,7 +101,7 @@ def login_(request):
     if not user:
         return dict(isOk=0)
     # If the password is incorrect, increment and return rejection_count
-    if user.password_hash != hash_string(password):
+    if user.password_ != hash(password):
         user.rejection_count += 1
         return dict(isOk=0, rejection_count=user.rejection_count)
     # If there have been too many rejections, expect recaptcha
@@ -200,6 +201,29 @@ def update_(request):
     return dict(isOk=0, message='Command not recognized')
 
 
+@view_config(route_name='user_move', renderer='json', request_method='POST', permission='privileged')
+def move(request):
+    'Move a user to a different group'
+    params = request.params
+    if params.get('token') != request.session.get_csrf_token():
+        return dict(isOk=0, message='Invalid token')
+    userID = authenticated_userid(request)
+    # Load
+    targetUserID = params.get('targetUserID', 0)
+    targetUser = db.query(User).get(targetUserID)
+    is_super = params.get('is_super', 0)
+    if not targetUser:
+        return dict(isOk=0, message='Could not find targetUserID=%s' % targetUserID)
+    if int(userID) == int(targetUserID):
+        return dict(isOk=0, message='Cannot promote or demote yourself')
+    try:
+        is_super = bool(int(is_super))
+    except ValueError:
+        return dict(isOk=0, message='Could not parse is_super=%s' % is_super)
+    targetUser.is_super = is_super
+    return dict(isOk=1)
+
+
 @view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
 def reset(request):
     'Reset password'
@@ -213,7 +237,7 @@ def reset(request):
     # Reset account
     return save_user_(request, dict(
         username=user.username, 
-        password=make_random_string(PASSWORD_LEN),
+        password=make_random_string(PASSWORD_LEN_MAX),
         nickname=user.nickname,
         email=user.email), 'reset', user)
 
@@ -250,7 +274,7 @@ def save_user_(request, valueByName, action, user=None):
     # Prepare user_
     user_ = User_(
         username=form['username'],
-        password_hash=hash_string(form['password']), 
+        password_=hash(form['password']), 
         nickname=form['nickname'], 
         email=form['email'],
         user_id=user.id if user else None,
@@ -283,7 +307,7 @@ def apply_user_(ticket):
         db.merge(User(
             id=user_.user_id,
             username=user_.username,
-            password_hash=user_.password_hash,
+            password_=user_.password_,
             nickname=user_.nickname,
             email=user_.email,
             rejection_count=0))
@@ -329,24 +353,28 @@ class UserForm(Schema):
     filter_extra_fields = True
 
     username = All(
-        validators.String(
+        validators.UnicodeString(
             min=USERNAME_LEN_MIN,
             max=USERNAME_LEN_MAX,
+            not_empty=True,
             strip=True),
         Unique('username', 'That username already exists'))
     password = All(
-        validators.MinLength(
-            PASSWORD_LEN_MIN,
+        validators.UnicodeString(
+            min=PASSWORD_LEN_MIN,
             not_empty=True),
         SecurePassword())
     nickname = All(
         validators.UnicodeString(
             min=NICKNAME_LEN_MIN,
             max=NICKNAME_LEN_MAX,
+            not_empty=True,
             strip=True),
         Unique('nickname', 'That nickname already exists'))
     email = All(
-        validators.Email(
-            not_empty=True, 
+        validators.UnicodeString(
+            max=EMAIL_LEN_MAX,
+            not_empty=True,
             strip=True),
+        validators.Email(),
         Unique('email', 'That email is reserved for another account'))

@@ -1,12 +1,12 @@
 import os
 import sys
-from setuptools import setup, find_packages
 
-from auth.parameters import SITE_VERSION
+from setuptools import setup, find_packages
 
 
 requires = [
     'formencode',
+    'pycrypto',
     'pyramid',
     'pyramid_beaker',
     'pyramid_mailer',
@@ -37,7 +37,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 setup(
     name='auth',
-    version=SITE_VERSION,
+    version='0.0',
     description='auth',
     long_description=README + '\n\n' +  CHANGES,
     classifiers=[

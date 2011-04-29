@@ -24,7 +24,9 @@ def main(global_config, **settings):
             for section in configParser.sections():
                 settings.update(configParser.items(section))
     if 'hashlib.secret' in settings:
-        tools.secret = settings['hashlib.secret']
+        tools.secret1 = settings['hashlib.secret']
+    if 'ciphers.secret' in settings:
+        tools.secret2 = settings['ciphers.secret']
     # Connect to database
     initialize_sql(engine_from_config(settings, 'sqlalchemy.'))
     # Define methods
@@ -48,7 +50,7 @@ def main(global_config, **settings):
             USER_ID=userID,
             USER_NICKNAME=nickname,
             USER_OFFSET=offset,
-            USER_GROUPS=groups)
+            IS_SUPER='s' in groups)
     # Prepare configuration
     if 'authtkt.secret' not in settings:
         settings['authtkt.secret'] = tools.make_random_string(SECRET_LEN)
@@ -88,7 +90,7 @@ class RootFactory(object):
     'Permission definitions'
     __acl__ = [ 
         (Allow, Authenticated, 'protected'),
-        (Allow, 'x', 'privileged'),
+        (Allow, 's', 'privileged'),
     ]
 
     def __init__(self, request):
