@@ -11,17 +11,17 @@ secret2 = alphabet # Set this in .development.ini or .production.ini
 
 def hash(string): 
     'Compute the hash of the string'
-    return hashlib.sha256(string.encode('utf8') + secret1).digest()
+    return hashlib.sha256(string.encode('utf-8') + secret1).digest()
 
 
 def encrypt(string):
     'Encrypt string'
-    return AES.new(secret2[:32], AES.MODE_CFB).encrypt(string.encode('utf8'))
+    return AES.new(secret2[:32], AES.MODE_CFB).encrypt(string.encode('utf-8'))
 
 
 def decrypt(string):
     'Decrypt string'
-    return AES.new(secret2[:32], AES.MODE_CFB).decrypt(string).decode('utf8')
+    return AES.new(secret2[:32], AES.MODE_CFB).decrypt(string).decode('utf-8')
 
 
 def make_random_string(length):
