@@ -5,7 +5,9 @@ from setuptools import setup, find_packages
 
 
 requires = [
+    'cryptacular',
     'formencode',
+    'imapIO',
     'pycrypto',
     'pyramid',
     'pyramid_beaker',

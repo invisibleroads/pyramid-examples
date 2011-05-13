@@ -2,9 +2,9 @@
 import os; basePath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import sys; sys.path.append(basePath)
 import optparse
-import ConfigParser
 from sqlalchemy import create_engine
 
+from auth import load_settings
 from auth.models import initialize_sql
 
 
@@ -17,10 +17,9 @@ class OptionParser(optparse.OptionParser):
 
 
 def initialize(options):
-    'Connect to database'
+    'Connect to database and return configuration settings'
     if options.verbose:
         print 'Using %s' % options.configurationPath
-    configuration = ConfigParser.ConfigParser({'here': basePath})
-    configuration.read(options.configurationPath)
-    initialize_sql(create_engine(configuration.get('app:auth', 'sqlalchemy.url')))
-    return configuration
+    settings = load_settings(options.configurationPath, basePath)
+    initialize_sql(create_engine(settings['sqlalchemy.url']))
+    return settings

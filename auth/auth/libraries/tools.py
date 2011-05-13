@@ -1,27 +1,20 @@
 'General purpose tools'
-import hashlib
 import random
 from Crypto.Cipher import AES
 
 
 alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-secret1 = ''       # Set this in .development.ini or .production.ini
-secret2 = alphabet # Set this in .development.ini or .production.ini
-
-
-def hash(string): 
-    'Compute the hash of the string'
-    return hashlib.sha256(string.encode('utf-8') + secret1).digest()
+secret = alphabet # Please set this in .development.ini or .production.ini
 
 
 def encrypt(string):
     'Encrypt string'
-    return AES.new(secret2[:32], AES.MODE_CFB).encrypt(string.encode('utf-8'))
+    return AES.new(secret[:32], AES.MODE_CFB).encrypt(string.encode('utf-8'))
 
 
 def decrypt(string):
     'Decrypt string'
-    return AES.new(secret2[:32], AES.MODE_CFB).decrypt(string).decode('utf-8')
+    return AES.new(secret[:32], AES.MODE_CFB).decrypt(string).decode('utf-8')
 
 
 def make_random_string(length):
@@ -30,10 +23,7 @@ def make_random_string(length):
 
 
 def make_random_unique_string(length, is_unique):
-    """
-    Return a random unique string given a function that
-    checks whether the string is unique
-    """
+    'Return a random string given a function that checks for uniqueness'
     # Initialize
     iterationCount = 0
     permutationCount = len(alphabet) ** length

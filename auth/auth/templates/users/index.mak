@@ -4,7 +4,9 @@
 
 <%def name='css()'>
 td {text-align: center}
-.flag {font-size: xx-small; vertical-align: middle}
+.user {color: gray}
+.user.is_active {color: black}
+.flag {color: darkblue}
 </%def>
 
 <%def name='toolbar()'>
@@ -24,8 +26,8 @@ function computeTableHeight() {
 var usersTable = $('#users').dataTable({
 	'aaSorting': [[2, 'desc']],
 	'aoColumns': [
-		{'sType': 'string'},
-        {'sType': 'string'},
+		{'sType': 'html'},
+        {'sType': 'html'},
 		{'sType': 'title-string'}
 	],
 	'bInfo': false,
@@ -42,8 +44,10 @@ $('.dataTables_filter input').focus();
 var token = '${request.session.get_csrf_token()}';
 $('.role').live({
 	mouseenter: function() {
+        var targetUserID = getID(this);
         var objText = $(this).find('.text').hide();
-        var message = $.trim(objText.text()) ? 'Demote' : 'Promote';
+        var objRow = $('#user' + targetUserID);
+        var message = objRow.hasClass('is_super') ? 'Demote' : 'Promote';
 		$(this).append('<span class=flag>' + message + '</span>');
 	},
 	mouseleave: function() {
@@ -51,25 +55,71 @@ $('.role').live({
         $(this).find('.text').show();
 	},
     click: function() {
+        var targetUserID = getID(this);
         var objFlag = $(this).find('.flag').remove();
         var objText = $(this).find('.text').show();
-        var message, is_super;
-        if ($.trim(objText.text())) {
-            message = 'Demote from'
-            is_super = 0;
-        } else {
-            message = 'Promote to'
-            is_super = 1;
-        }
-        if (confirm(message + ' superuser?')) {
+        var objRow = $('#user' + targetUserID);
+        var is_super = objRow.hasClass('is_super') ? 0 : 1;
+        if (confirm((is_super ? 'Demote from' : 'Promote to') + ' superuser?')) {
             objText.text(is_super ? 'Superuser' : '');
+            if (is_super) {
+                objRow.addClass('is_super');
+            } else {
+                objRow.removeClass('is_super');
+            }
             post("${request.route_path('user_move')}", {
                 token: token,
-                targetUserID: getID(this),
+                targetUserID: targetUserID,
                 is_super: is_super
             }, function(data) {
                 if (!data.isOk) {
                     objText.text(is_super ? '' : 'Superuser');
+                    if (is_super) {
+                        objRow.removeClass('is_super');
+                    } else {
+                        objRow.addClass('is_super');
+                    }
+                    alert(data.message);
+                }
+            });
+        }
+    }
+});
+$('.when_login').live({
+	mouseenter: function() {
+        var targetUserID = getID(this);
+        var objText = $(this).find('.text').hide();
+        var objRow = $('#user' + targetUserID);
+        var message = objRow.hasClass('is_active') ? 'Deactivate' : 'Activate';
+		$(this).append('<span class=flag>' + message + '</span>');
+	},
+	mouseleave: function() {
+		$(this).find('.flag').remove();
+        $(this).find('.text').show();
+	},
+    click: function() {
+        var targetUserID = getID(this);
+        var objFlag = $(this).find('.flag').remove();
+        var objText = $(this).find('.text').show();
+        var objRow = $('#user' + targetUserID);
+        var is_active = objRow.hasClass('is_active') ? 0 : 1;
+        if (confirm((is_active ? 'Activate' : 'Deactivate') + ' user?')) {
+            if (is_active) {
+                objRow.addClass('is_active');
+            } else {
+                objRow.removeClass('is_active');
+            }
+            post("${request.route_path('user_move')}", {
+                token: token,
+                targetUserID: targetUserID,
+                is_active: is_active
+            }, function(data) {
+                if (!data.isOk) {
+                    if (is_active) {
+                        objRow.removeClass('is_active');
+                    } else {
+                        objRow.addClass('is_active');
+                    }
                     alert(data.message);
                 }
             });
@@ -96,29 +146,40 @@ import whenIO
         <%
         userID = user.id;
         %>
-		<tr>
+		<tr id=user${userID} class='user \
+        % if user.is_active:
+            is_active\
+        % endif
+        % if user.is_super:
+            is_super\
+        % endif
+        '>
 			<td>${user.nickname}</td>
-            <td 
+            <td id=role${userID}
             % if USER_ID != userID:
             class=role
             % endif
-            id=role${userID}>
+            >
                 <span class=text>\
                 % if user.is_super:
                     Superuser\
                 % endif
                 </span>
             </td>
-			<td>
+			<td id=when_login${userID}
+            % if USER_ID != userID:
+            class=when_login
+            % endif
+            >
 			% if user.when_login:
 				<%
 				when_login = user.when_login
-				localWhenIO = whenIO.WhenIO(user.offset)
+				localWhenIO = whenIO.WhenIO(user.minutes_offset)
 				%>
-				<span title="${when_login.strftime('%Y%m%d%H%M%S')}"></span>
+				<span class=text title="${when_login.strftime('%Y%m%d%H%M%S')}"></span>
 				${localWhenIO.format(when_login)} ${localWhenIO.format_offset()}
 			% else:
-				<span title=''></span>
+				<span class=text title=''></span>
 			% endif
 			</td>
 		</tr>

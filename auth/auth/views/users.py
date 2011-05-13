@@ -1,5 +1,4 @@
 'Views for user account management'
-import base64
 import datetime
 from pyramid.view import view_config
 from pyramid.security import remember, forget, authenticated_userid
@@ -11,9 +10,10 @@ from email.utils import formataddr
 from formencode import validators, Schema, All, Invalid
 from recaptcha.client import captcha
 from sqlalchemy.orm import joinedload
+from beaker.cache import cache_region, region_invalidate
 
 from auth.models import db, User, User_, SMSAddress
-from auth.libraries.tools import hash, make_random_string, make_random_unique_string
+from auth.libraries.tools import make_random_string, make_random_unique_string
 from auth.parameters import *
 
 
@@ -26,6 +26,7 @@ def includeme(config):
     config.add_route('user_logout', 'users/logout')
     config.add_route('user_update', 'users/update')
     config.add_route('user_move', 'users/move')
+    config.add_route('user_mutate', 'users/mutate')
     config.add_route('user_reset', 'users/reset')
 
 
@@ -51,10 +52,11 @@ def register_(request):
 def confirm(request):
     'Confirm changes'
     # Apply changes to user account
-    user_ = apply_user_(request.matchdict.get('ticket', ''))
-    # If the user_ exists,
-    if user_:
-        # Set
+    try:
+        user_ = apply_user_(request.matchdict.get('ticket', ''))
+    except UserException:
+        message = 'Ticket expired'
+    else:
         message = 'Account updated' if user_.user_id else 'Account created'
         # Delete expired or similar user_
         db.execute(User_.__table__.delete().where(
@@ -62,11 +64,7 @@ def confirm(request):
             (User_.username == user_.username) | 
             (User_.nickname == user_.nickname) | 
             (User_.email == user_.email)))
-    # If the user_ does not exist,
-    else:
-        # Set
-        message = 'Ticket expired'
-    # Save flash in session
+    # Save message in session
     request.session.flash(message)
     # Return
     return HTTPFound(location=request.route_path('user_login'))
@@ -80,7 +78,7 @@ def login(request):
     if request.path == request.route_path('user_login'):
         # Get the target url from the query string
         url = request.params.get('url', '/')
-    # If the user tried to access a protected resource,
+    # If the user tried to access a forbidden resource,
     else:
         # Get the target url directly
         url = request.url
@@ -101,7 +99,7 @@ def login_(request):
     if not user:
         return dict(isOk=0)
     # If the password is incorrect, increment and return rejection_count
-    if user.password_ != hash(password):
+    if not user.check(password):
         user.rejection_count += 1
         return dict(isOk=0, rejection_count=user.rejection_count)
     # If there have been too many rejections, expect recaptcha
@@ -114,12 +112,12 @@ def login_(request):
             return dict(isOk=0, rejection_count=user.rejection_count)
     # Save user
     try:
-        user.offset = int(params.get('offset', MINUTES_OFFSET))
+        user.minutes_offset = int(params.get('minutes_offset', MINUTES_OFFSET))
     except ValueError:
-        user.offset = MINUTES_OFFSET
+        user.minutes_offset = MINUTES_OFFSET
     user.when_login = datetime.datetime.utcnow()
     user.rejection_count = 0
-    # Set headers to set cookie
+    # Set cookie
     if not hasattr(request, 'response_headerlist'):
         request.response_headerlist = []
     request.response_headerlist.extend(remember(request, user.id, tokens=format_tokens(user)))
@@ -133,7 +131,7 @@ def logout(request):
     return HTTPFound(location=request.params.get('url', '/'), headers=forget(request))
 
 
-@view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='protected')
+@view_config(route_name='user_update', renderer='users/change.mak', request_method='GET', permission='authenticated')
 def update(request):
     'Show account update page'
     userID = authenticated_userid(request)
@@ -141,43 +139,16 @@ def update(request):
     return dict(user=user)
 
 
-@view_config(route_name='user_update', renderer='json', request_method='POST', permission='protected')
+@view_config(route_name='user_update', renderer='json', request_method='POST', permission='authenticated')
 def update_(request):
     'Update account'
     params = request.params
     if params.get('token') != request.session.get_csrf_token():
-        return dict(isOk=0, message='Invalid token')
+        return dict(isOk=0, message='Invalid session token')
     userID = authenticated_userid(request)
     # If the user is trying to update account information, send confirmation email
     if 'username' in params:
         return save_user_(request, dict(params), 'update', db.query(User).get(userID))
-    # Load
-    smsAddressAction = params.get('smsAddressAction')
-    # If the user is adding an SMS address,
-    if 'add' == smsAddressAction:
-        # Make sure it is a valid email address
-        validateEmail = validators.Email().to_python
-        try:
-            smsAddressEmail = validateEmail(params.get('smsAddressEmail', ''))
-        except Invalid, error:
-            return dict(isOk=0, message=str(error))
-        # Check for duplicates
-        smsAddress = db.query(SMSAddress).filter(
-            (SMSAddress.email == smsAddressEmail) & 
-            (SMSAddress.user_id == userID)).first()
-        if smsAddress:
-            return dict(isOk=0, message='You already added this SMS address')
-        # Add it to the database
-        smsAddress = SMSAddress(email=smsAddressEmail, user_id=userID, code=make_random_string(CODE_LEN))
-        db.add(smsAddress)
-        # Send confirmation code
-        get_mailer(request).send_to_queue(Message(
-            recipients=[smsAddress.email],
-            body=smsAddress.code))
-        # Return smsAddresses
-        return dict(isOk=1, content=render('users/smsAddresses.mak', {
-            'user': db.query(User).options(joinedload(User.sms_addresses)).get(userID)
-        }, request))
     # Make sure the smsAddressID belongs to the user
     smsAddressID = params.get('smsAddressID')
     smsAddress = db.query(SMSAddress).filter(
@@ -185,14 +156,16 @@ def update_(request):
         (SMSAddress.user_id == userID)).first()
     if not smsAddress:
         return dict(isOk=0, message='Could not find smsAddressID=%s corresponding to userID=%s' % (smsAddressID, userID))
+    # Load
+    smsAddressAction = params.get('smsAddressAction')
     # If the user is activating an SMS address,
     if 'activate' == smsAddressAction:
-        # If the code is not correct, return error message
-        if params.get('smsAddressCode') != smsAddress.code:
-            return dict(isOk=0, message='Code is not valid')
-        # Clear code
-        smsAddress.code = None
-        return dict(isOk=1)
+        smsAddress.is_active = True
+        return dict(isOk=1, is_active=smsAddress.is_active)
+    # If the user is deactivating an SMS address,
+    if 'deactivate' == smsAddressAction:
+        smsAddress.is_active = False
+        return dict(isOk=1, is_active=smsAddress.is_active)
     # If the user is removing an SMS address,
     elif 'remove' == smsAddressAction:
         db.delete(smsAddress)
@@ -201,27 +174,56 @@ def update_(request):
     return dict(isOk=0, message='Command not recognized')
 
 
-@view_config(route_name='user_move', renderer='json', request_method='POST', permission='privileged')
+@view_config(route_name='user_move', renderer='json', request_method='POST', permission='super')
 def move(request):
-    'Move a user to a different group'
+    'Move a user to a different access category'
     params = request.params
     if params.get('token') != request.session.get_csrf_token():
-        return dict(isOk=0, message='Invalid token')
+        return dict(isOk=0, message='Invalid session token')
     userID = authenticated_userid(request)
-    # Load
+    # Load targetUser
     targetUserID = params.get('targetUserID', 0)
     targetUser = db.query(User).get(targetUserID)
-    is_super = params.get('is_super', 0)
     if not targetUser:
         return dict(isOk=0, message='Could not find targetUserID=%s' % targetUserID)
     if int(userID) == int(targetUserID):
         return dict(isOk=0, message='Cannot promote or demote yourself')
-    try:
-        is_super = bool(int(is_super))
-    except ValueError:
-        return dict(isOk=0, message='Could not parse is_super=%s' % is_super)
-    targetUser.is_super = is_super
+    # Load attributes
+    hasAttributes = False
+    for attributeName in 'is_active', 'is_super':
+        value = params.get(attributeName)
+        if value is None:
+            continue
+        try:
+            value = bool(int(value))
+        except ValueError:
+            return dict(isOk=0, message='Could not parse %s=%s' % (attributeName, value))
+        setattr(targetUser, attributeName, value)
+        hasAttributes = True
+    if not hasAttributes:
+        return dict(isOk=0, message='No attributes specified')
+    # Return
+    region_invalidate(get_properties, None, targetUserID)
     return dict(isOk=1)
+
+
+@view_config(route_name='user_mutate', renderer='json', request_method='POST', permission='authenticated')
+def mutate(request):
+    'Mutate user token'
+    params = request.params
+    if params.get('token') != request.session.get_csrf_token():
+        return dict(isOk=0, message='Invalid session token')
+    userID = authenticated_userid(request)
+    # Mutate user code 
+    user = db.query(User).get(userID)
+    user.code = make_random_string(CODE_LEN)
+    # Refresh cookie
+    if not hasattr(request, 'response_headerlist'):
+        request.response_headerlist = []
+    request.response_headerlist.extend(remember(request, user.id, tokens=format_tokens(user)))
+    # Return
+    region_invalidate(get_properties, None, userID)
+    return dict(isOk=1, code=user.code)
 
 
 @view_config(route_name='user_reset', renderer='json', request_method='POST', permission='__no_permission_required__')
@@ -244,18 +246,20 @@ def reset(request):
 
 def format_tokens(user):
     'Format user information into a cookie'
-    nickname = 'x' + base64.urlsafe_b64encode(user.nickname.encode('utf8')).replace('=', '+')
-    offset = 'x' + str(user.offset)
-    groups = user.groups
-    return [nickname, offset] + groups
+    code = 'x' + str(user.code)
+    return [code]
 
 
 def parse_tokens(tokens):
     'Parse user information from a cookie'
-    nickname = base64.urlsafe_b64decode(tokens[0][1:].replace('+', '=')).decode('utf8')
-    offset = int(tokens[1][1:])
-    groups = tokens[2:]
-    return nickname, offset, groups
+    code = tokens[0][1:]
+    return [code]
+
+
+@cache_region('medium')
+def get_properties(userID):
+    'Return user properties'
+    return db.query(User.nickname, User.minutes_offset, User.is_active, User.is_super, User.code).filter_by(id=userID).first()
 
 
 def save_user_(request, valueByName, action, user=None):
@@ -274,7 +278,7 @@ def save_user_(request, valueByName, action, user=None):
     # Prepare user_
     user_ = User_(
         username=form['username'],
-        password_=hash(form['password']), 
+        password=form['password'], 
         nickname=form['nickname'], 
         email=form['email'],
         user_id=user.id if user else None,
@@ -297,20 +301,24 @@ def save_user_(request, valueByName, action, user=None):
 
 def apply_user_(ticket):
     'Finalize a change to a user account'
-    # Load
     user_ = db.query(User_).filter(
         (User_.ticket == ticket) & 
         (User_.when_expired >= datetime.datetime.utcnow())).first()
+    if not user_:
+        raise UserException('')
     # If the ticket is valid,
     if user_:
         # Apply the change and reset rejection_count
+        userID = user_.user_id
         db.merge(User(
-            id=user_.user_id,
+            id=userID,
             username=user_.username,
             password_=user_.password_,
             nickname=user_.nickname,
             email=user_.email,
-            rejection_count=0))
+            rejection_count=0,
+            code=make_random_string(CODE_LEN)))
+        region_invalidate(get_properties, None, userID)
     # Return
     return user_
 
@@ -378,3 +386,7 @@ class UserForm(Schema):
             strip=True),
         validators.Email(),
         Unique('email', 'That email is reserved for another account'))
+
+
+class UserException(Exception):
+    pass

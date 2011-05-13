@@ -23,7 +23,7 @@
 	%>
 % for linkName, linkPath in linkPacks:
 	&nbsp;
-	% if path != linkPath:
+	% if linkPath != path:
 		<a href='${linkPath}' class='hover link off'>${linkName}</a>
 	% else:
 		<b>${linkName}</b>
@@ -45,9 +45,10 @@
 <script src="${request.static_url('auth:static/jquery-1.5.2.min.js')}"></script>
 ${self.root()}
 <script>
-	$('.hover').live('hover', function(e) {
-		$(this).toggleClass('off on');
-	});
+    $('.hover').live({
+        mouseenter: function() {$(this).removeClass('off').addClass('on')},
+        mouseleave: function() {$(this).removeClass('on').addClass('off')}
+    });
 	function getNumber(x) {return /\d+/.exec(x)[0]}
 	function getID(obj) {return getNumber(obj.id)}
     function ajax(type, url, data, callback) {

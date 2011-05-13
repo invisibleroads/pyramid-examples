@@ -4,9 +4,8 @@
 
 <%def name='css()'>
 td {padding-right: 1em}
-.smsAddressCode {display: none}
-.smsAddressInactive {color: gray}
-.flag {font-size: xx-small; vertical-align: middle}
+.smsAddressInactive .text {color: gray}
+.flag {color: darkblue}
 </%def>
 
 <%def name='js()'>
@@ -64,46 +63,18 @@ function save() {
 }
 $('#save').click(save);
 % if user:
-// Add SMS address after user presses ENTER key in input box
-$('#smsAddressEmail').live('keydown', function(e) {
-	if (e.keyCode == 13) {
-		var smsAddressEmail = $.trim(this.value);
-		if (!smsAddressEmail.length) {
-			return showMessageByID({smsAddressEmail: 'Please enter a value'});
+// Mutate token
+$('#mutate').click(function() {
+	$.post("${request.route_path('user_mutate')}", {
+		token: token
+	}, function(data) {
+		if (data.isOk) {
+			$('#m_status').html('Token mutated successfully');
+			$('#userCode').html(data.code);
+		} else {
+			$('#m_status').html(data.message);
 		}
-		post("${request.route_path('user_update')}", {
-			token: token,
-			smsAddressAction: 'add',
-			smsAddressEmail: smsAddressEmail
-		}, function(data) {
-			if (data.isOk) {
-				$('#smsAddresses').html(data.content);
-			} else {
-				showMessageByID({smsAddressEmail: data.message});
-			}
-		});
-	}
-});
-// Activate SMS address after user enters correct code
-$('.smsAddressCode').live('keydown', function() {
-	if (e.keyCode == 13) {
-		var smsAddressID = getID(this), smsAddressCode = $(this), smsAddressEmail = $('#smsAddressEmail' + smsAddressID);
-		smsAddressCode.attr('disabled', 'disabled');
-		post("${request.route_path('user_update')}", {
-			token: token,
-			smsAddressAction: 'activate',
-			smsAddressID: smsAddressID,
-			smsAddressCode: smsAddressCode
-		}, function(data) {
-			if (data.isOk) {
-				smsAddressCode.hide();
-				smsAddressEmail.removeClass('smsAddressInactive').show();
-			} else {
-				alert(data.message);
-				smsAddressCode.removeAttr('disabled').val('').focus();
-			}
-		});
-	}
+	});
 });
 // Remove SMS address after user clicks on the button
 $('.smsAddressRemove').live('click', function() {
@@ -111,8 +82,8 @@ $('.smsAddressRemove').live('click', function() {
 	smsAddress.hide();
 	post("${request.route_path('user_update')}", {
 		token: token,
-		smsAddressAction: 'remove',
-		smsAddressID: smsAddressID
+		smsAddressID: smsAddressID,
+		smsAddressAction: 'remove'
 	}, function(data) {
 		if (!data.isOk) {
 			alert(data.message);
@@ -120,17 +91,39 @@ $('.smsAddressRemove').live('click', function() {
 		}
 	});
 });
-// Show SMS address code input box after user clicks on text
-$('.smsAddressInactive').live({
+// Activate SMS address after user clicks on text
+$('.smsAddressEmail').live({
 	mouseenter: function() {
-		$(this).append('<span class=flag>&nbsp; activate</span>');
+		var smsAddressID = getID(this);
+		var is_active = $('#smsAddress' + smsAddressID).hasClass('smsAddressInactive');
+		$(this).find('.text').hide();
+		$(this).append('<span class=flag>' + (is_active ? 'Deactivate' : 'Activate') + '</span>');
 	},
 	mouseleave: function() {
 		$(this).find('.flag').remove();
+		$(this).find('.text').show();
 	},
 	click: function() {
-		$(this).hide();
-		$('#smsAddressCode' + getID(this)).show().focus();
+		$(this).find('.flag').remove();
+		var smsAddressID = getID(this);
+		var smsAddress = $('#smsAddress' + smsAddressID);
+		var is_active = smsAddress.hasClass('smsAddressInactive');
+		post("${request.route_path('user_update')}", {
+			token: token,
+			smsAddressID: smsAddressID,
+			smsAddressAction: is_active ? 'deactivate' : 'activate'
+		}, function(data) {
+			$('#smsAddressEmail' + smsAddressID).find('.text').show();
+			if (data.isOk) {
+				if (data.is_active) {
+					smsAddress.removeClass('smsAddressInactive');
+				} else {
+					smsAddress.addClass('smsAddressInactive');
+				}
+			} else {
+				alert(data.message);
+			}
+		});
 	}
 });
 % endif
@@ -148,54 +141,56 @@ ${'Update your account' if user else 'Register for an account'}
 </%def>
 
 <table>
-    <tr>
-        <td><label for=username>Username</label></td>
-        <td><input id=username class=lockOnSave autocomplete=off\
+	<tr>
+		<td><label for=username>Username</label></td>
+		<td><input id=username class=lockOnSave autocomplete=off\
 		% if user:
 			value='${user.username}'
 		% endif
 		></td>
-        <td id=m_username class=message>What you use to login</td>
-    </tr>
-    <tr>
-        <td><label for=password>Password</label></td>
-        <td><input id=password class=lockOnSave type=password autocomplete=off></td>
-        <td id=m_password class=message>So you have some privacy</td>
-    </tr>
-    <tr>
-        <td><label for=nickname>Nickname</label></td>
-        <td><input id=nickname class=lockOnSave autocomplete=off\
+		<td id=m_username class=message>What you use to login</td>
+	</tr>
+	<tr>
+		<td><label for=password>Password</label></td>
+		<td><input id=password class=lockOnSave type=password autocomplete=off></td>
+		<td id=m_password class=message>So you have some privacy</td>
+	</tr>
+	<tr>
+		<td><label for=nickname>Nickname</label></td>
+		<td><input id=nickname class=lockOnSave autocomplete=off\
 		% if user:
 			value='${user.nickname}'
 		% endif
 		></td>
-        <td id=m_nickname class=message>How others see you</td>
-    </tr>
-    <tr>
-        <td><label for=email>Email</label></td>
-        <td><input id=email class=lockOnSave autocomplete=off\
+		<td id=m_nickname class=message>How others see you</td>
+	</tr>
+	<tr>
+		<td><label for=email>Email</label></td>
+		<td><input id=email class=lockOnSave autocomplete=off\
 		% if user:
 			value='${user.email}'
 		% endif
 		></td>
-        <td id=m_email class=message>To confirm changes to your account</td>
-    </tr>
-    <tr>
-        <td></td>
-		<td><input id=save class=lockOnSave type=button value="${'Update' if user else 'Register'}"></td>
-        <td id=m_status class=message></td>
-    </tr>
-% if user:
-    <tr>
-        <td>&nbsp;</td>
-    </tr>
-    <tr>
-		<td><label for=smsAddressEmail>SMS address</label></td>
-		<td><input id=smsAddressEmail></td>
-		<td id=m_smsAddressEmail class=message>For text message alerts</td>
-    </tr>
-	<tbody id=smsAddresses>
-		<%include file='smsAddresses.mak'/>
-	</tbody>
-% endif
+		<td id=m_email class=message>To confirm changes to your account</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td>
+			<input id=save class=lockOnSave type=button value="${'Update' if user else 'Register'}" title='Send confirmation'>
+		% if user:
+			<input id=mutate type=button value=Mutate title='Invalidate other sessions for your security'>
+		% endif
+		</td>
+		<td id=m_status class=message></td>
+	</tr>
 </table>
+% if user:
+	<p>
+	For SMS alerts, send a text message to ${request.registry.settings['sms.email']} with 
+	${user.id}-<span id=userCode>${user.code}</span> as the subject.
+	</p>
+
+	<div id=smsAddresses>
+		<%include file='smsAddresses.mak'/>
+	</div>
+% endif

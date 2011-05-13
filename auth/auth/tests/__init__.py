@@ -1,53 +1,57 @@
 # -*- coding: utf-8 -*-
 'Test templates'
-import os
+import os; basePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import re
 import webtest
 import shutil
 import unittest
-import tempfile
 import simplejson
 import transaction
 import warnings; warnings.simplefilter('error')
-from ConfigParser import ConfigParser
 
-from auth import main
+from auth import main, load_settings
 from auth.models import db, User
-from auth.libraries.tools import hash
 
 
-temporaryFolder = tempfile.mkdtemp()
+configurationPath = os.path.join(basePath, 'test.ini')
+settings = load_settings(configurationPath, basePath)
 
 
 class TestTemplate(unittest.TestCase):
 
-    router = main({}, **{
-        'sqlalchemy.url': 'sqlite://',
-        'mail.queue_path': os.path.join(temporaryFolder, 'mail'),
-        'mail.default_sender': 'auth <support@example.com>',
-    })
+    router = main({'__file__': configurationPath}, **settings)
 
     def setUp(self):
         # Initialize functional test framework
         self.app = webtest.TestApp(self.router)
         self.logout()
-        if not os.path.exists(temporaryFolder):
-            os.mkdir(temporaryFolder)
         # Reset users
-        word = 'Спасибо1'.decode('utf-8')
-        self.userS = {'username': word, 'password': word, 'nickname': word, 'email': word + '@example.com'}
-        self.userN = dict((key, value.replace('1', '2')) for key, value in self.userS.iteritems())
-        for userIndex, valueByKey in enumerate([self.userS, self.userN], 1):
-            username, password, nickname, email = [valueByKey.get(x) for x in 'username', 'password', 'nickname', 'email']
-            db.merge(User(id=userIndex, username=username, password_=hash(password), nickname=nickname, email=email, is_super=userIndex % 2))
+        word = 'Спасибо'.decode('utf-8')
+        self.userS = ReplaceableDict() # Super
+        self.userA = ReplaceableDict() # Active
+        self.userI = ReplaceableDict() # Inactive
+        for userID, valueByKey in enumerate([self.userS, self.userA, self.userI], 1):
+            wordNumber = word + str(userID)
+            valueByKey['username'] = wordNumber
+            valueByKey['password'] = wordNumber
+            valueByKey['nickname'] = wordNumber
+            valueByKey['email'] = wordNumber + '@example.com'
+            valueByKey['is_active'] = userID != 3
+            valueByKey['is_super'] = userID == 1
+            user = User(
+                id=userID, 
+                username=valueByKey['username'], 
+                password=valueByKey['password'],
+                nickname=valueByKey['nickname'],
+                email=valueByKey['email'],
+                is_active=valueByKey['is_active'],
+                is_super=valueByKey['is_super'])
+            db.merge(user)
         transaction.commit()
 
-    def tearDown(self):
-        shutil.rmtree(temporaryFolder)
-
-    def get_url(self, name, **kw):
+    def get_url(self, name, **kwargs):
         'Return URL for route'
-        return self.router.routes_mapper.generate(name, kw)
+        return self.router.routes_mapper.generate(name, kwargs)
 
     def get(self, url, params=None):
         'Send a GET request'
@@ -65,13 +69,18 @@ class TestTemplate(unittest.TestCase):
         'Logout'
         return self.post(self.get_url('user_logout'))
 
-    def assertJSON(self, response, isOk):
+    def assert_json(self, response, isOk):
         'Assert response JSON'
         data = simplejson.loads(response.unicode_body)
         if data['isOk'] != isOk:
             print data
         self.assertEqual(data['isOk'], isOk)
         return data
+
+    def assert_forbidden(self, url, isForbidden=True, method='GET'):
+        'Return True if the page is forbidden'
+        body = getattr(self, method.lower())(url).body
+        return self.assertEqual('value=Login' in body, isForbidden)
 
 
 def unicode_dictionary(dictionary):
@@ -88,5 +97,5 @@ def get_token(body):
 
 class ReplaceableDict(dict):
     
-    def replace(self, **kw):
-        return dict(self.items() + kw.items())
+    def replace(self, **kwargs):
+        return ReplaceableDict(self.items() + kwargs.items())

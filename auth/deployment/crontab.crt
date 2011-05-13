@@ -1,4 +1,6 @@
 # Start server every twenty minutes
-15,35,55 * * * * cd /var/www/virtualenv/auth;source ../bin/activate;paster serve --daemon production.ini >> /dev/null 2>&1
+15,35,55 * * * * cd /var/www/virtualenv/auth;source ../bin/activate;paster serve --daemon production.ini >> paster.log 2>&1
 # Check outbox every minute
-* * * * * cd /var/www/virtualenv/auth;source ../bin/activate;qp data/mail --config .production.ini >> /dev/null 2>&1
+* * * * * cd /var/www/virtualenv/auth;source ../bin/activate;qp data/mail --config .production.ini >> qp.log 2>&1
+# Process SMS messages every fifteen minutes
+10,25,40,55 * * * * cd /var/www/virtualenv/auth;source ../bin/activate;python utilities/sms.py -c production.ini >> sms.log 2>&1

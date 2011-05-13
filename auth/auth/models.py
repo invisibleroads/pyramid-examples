@@ -2,17 +2,19 @@
 import transaction
 from sqlalchemy import func, Column, ForeignKey, Integer, String, LargeBinary, Unicode, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import scoped_session, sessionmaker, relationship, column_property
+from sqlalchemy.orm import column_property, scoped_session, sessionmaker, relationship, synonym
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.types import TypeDecorator
 from zope.sqlalchemy import ZopeTransactionExtension
+from cryptacular import bcrypt
 
-from auth.libraries.tools import hash, encrypt, decrypt, make_random_string
+from auth.libraries.tools import encrypt, decrypt, make_random_string
 from auth.parameters import *
 
 
 db = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
+crypt = bcrypt.BCRYPTPasswordManager()
 
 
 class CaseInsensitiveComparator(ColumnProperty.Comparator):
@@ -50,7 +52,7 @@ class LowercaseEncrypted(TypeDecorator):
     impl = LargeBinary
 
     def process_bind_param(self, value, dialect):
-        return encrypt(value.lower())
+        return encrypt((value or '').lower())
 
     def process_result_value(self, value, dialect):
         return decrypt(value)
@@ -63,23 +65,32 @@ class User(Base):
     username = column_property(
         Column(Unicode(USERNAME_LEN_MAX), unique=True), 
         comparator_factory=CaseInsensitiveComparator)
-    password_ = Column(LargeBinary(32)) # Each hash is 32 bytes long
+    password_ = Column('password', LargeBinary(60)) # Hash from bcrypt
+    @property
+    def password(self):
+        return self.password_
+    @password.setter
+    def password(self, password):
+        self.password_ = crypt.encode(password)
+    password = synonym('password_', descriptor=password)
     nickname = column_property(
         Column(Unicode(NICKNAME_LEN_MAX), unique=True),
         comparator_factory=CaseInsensitiveComparator)
     email = Column(LowercaseEncrypted(EMAIL_LEN_MAX * 2), unique=True)
+    is_active = Column(Boolean, default=True)
     is_super = Column(Boolean, default=False)
     rejection_count = Column(Integer, default=0)
-    offset = Column(Integer, default=0)
+    minutes_offset = Column(Integer, default=0)
     when_login = Column(DateTime)
+    code = Column(String(CODE_LEN), default=lambda: make_random_string(CODE_LEN))
     sms_addresses = relationship('SMSAddress')
 
     def __str__(self):
         return "<User(id=%s)>" % self.id
 
-    @property
-    def groups(self):
-        return ['s'] if self.is_super else []
+    def check(self, password):
+        'Return True if we have a matching password'
+        return crypt.check(self.password, password)
 
 
 class User_(Base):
@@ -89,7 +100,14 @@ class User_(Base):
     username = column_property(
         Column(Unicode(USERNAME_LEN_MAX)), 
         comparator_factory=CaseInsensitiveComparator)
-    password_ = Column(LargeBinary(32)) # Each hash is 32 bytes long
+    password_ = Column('password', LargeBinary(60)) # Hash from bcrypt
+    @property
+    def password(self):
+        return self.password_
+    @password.setter
+    def password(self, password):
+        self.password_ = crypt.encode(password)
+    password = synonym('password_', descriptor=password)
     nickname = column_property(
         Column(Unicode(NICKNAME_LEN_MAX)), 
         comparator_factory=CaseInsensitiveComparator)
@@ -108,7 +126,7 @@ class SMSAddress(Base):
     id = Column(Integer, primary_key=True)
     email = Column(LowercaseEncrypted(EMAIL_LEN_MAX * 2))
     user_id = Column(ForeignKey('users.id'))
-    code = Column(String(CODE_LEN))
+    is_active = Column(Boolean, default=False)
 
     def __str__(self):
         return "<SMSAddress(id=%s)>" % self.id
@@ -131,6 +149,6 @@ def initialize_sql(engine):
         userTemplate = '\nUsername\t%s\nPassword\t%s\nNickname\t%s\nEmail\t\t%s'
         for username, password, nickname, email, is_super in userPacks:
             print userTemplate % (username, password, nickname, email)
-            db.add(User(username=username, password_=hash(password), nickname=nickname, email=email, is_super=is_super))
+            db.add(User(username=username, password=password, nickname=nickname, email=email, is_super=is_super))
         print
         transaction.commit()
