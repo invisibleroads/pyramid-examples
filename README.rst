@@ -11,6 +11,7 @@ Examples of simple web applications built with Pyramid
     # Install packages
     pip install ipython ipdb nose coverage
     # Clone repository
-    git clone git://github.com/invisibleroads/pyramid-examples.git $PYRAMID_ENV/examples
+    EXAMPLES=$PYRAMID_ENV/examples
+    git clone git://github.com/invisibleroads/pyramid-examples.git $EXAMPLES
 
 For more information on running an example, please read the ``README.rst`` contained in each example's folder.

@@ -12,8 +12,8 @@ The user account management example demonstrates user authentication and authori
     pip install ipython ipdb nose coverage
 
     # Enter repository
-    PROJECTS=$HOME/Projects
-    cd $PROJECTS/auth
+    EXAMPLES=$PYRAMID_ENV/examples
+    cd $EXAMPLES/auth
     # Install dependencies
     python setup.py develop
 
