@@ -13,6 +13,7 @@ The user account management example demonstrates user authentication and authori
 
     # Enter repository
     EXAMPLES=$PYRAMID_ENV/examples
+    git clone git://github.com/invisibleroads/pyramid-examples.git $EXAMPLES
     cd $EXAMPLES/auth
     # Install dependencies
     python setup.py develop
