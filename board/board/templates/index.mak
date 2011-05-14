@@ -6,8 +6,9 @@
 </head>
 <body>
 	<input id=text>
-	<input id=add type=button value=Add>
-	<a href="${request.route_url('debug')}">Debug</a>
+	<input id=add type=button value=add>
+	<a href="${request.route_url('debug')}">debug</a>
+	<a href="${request.route_url('pdb')}">pdb</a>
 	<div id=posts>
 		<%include file='index_.mak'/>
 	</div>

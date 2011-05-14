@@ -11,6 +11,7 @@ def includeme(config):
     config.scan(__name__)
     config.add_route('index', '')
     config.add_route('debug', 'debug')
+    config.add_route('pdb', 'pdb')
 
 
 @view_config(route_name='index', renderer='index.mak', request_method='GET') 
@@ -37,6 +38,13 @@ def index_(request):
 def debug(request):
     'Enter debugger'
     raise Exception
+
+
+@view_config(route_name='pdb') 
+def debug(request):
+    'Enter debugger'
+    import pdb; pdb.set_trace()
+    return {}
 
 
 @cache_region('minute')
