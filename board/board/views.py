@@ -1,5 +1,6 @@
 'Views'
 from pyramid.view import view_config
+from pyramid.httpexceptions import HTTPFound
 from beaker.cache import cache_region, region_invalidate
 import transaction
 
@@ -36,15 +37,15 @@ def index_(request):
 
 @view_config(route_name='debug') 
 def debug(request):
-    'Enter debugger'
+    'Enter client-side debugger'
     raise Exception
 
 
 @view_config(route_name='pdb') 
-def debug(request):
-    'Enter debugger'
+def pdb(request):
+    'Enter server-side debugger'
     import pdb; pdb.set_trace()
-    return {}
+    return HTTPFound(location=request.route_path('index'))
 
 
 @cache_region('minute')
