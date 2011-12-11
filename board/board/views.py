@@ -44,7 +44,7 @@ def debug(request):
 @view_config(route_name='pdb') 
 def pdb(request):
     'Enter server-side debugger'
-    import pdb; pdb.set_trace()
+    import ipdb; ipdb.set_trace()
     return HTTPFound(location=request.route_path('index'))
 
 
